@@ -107,45 +107,45 @@ onMounted(load);
     <p v-if="error" class="error">{{ error }}</p>
     <section class="panel">
       <div class="overflow-x-auto">
-      <table>
-        <thead>
-          <tr>
-            <th>
-              Уникальный <br />
-              номер партии
-            </th>
-            <th>Источник <br />происхождения</th>
-            <th>
-              Участок добычи <br />
-              или поставщик
-            </th>
-            <th>Дата добычи или поступления</th>
-            <th>Текущий объем, т</th>
-            <th>Место хранения</th>
-            <th>Статус партии</th>
-            <th>Общая информация</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="b in rows" :key="b.id">
-            <td>{{ b.batchNumber }}</td>
-            <td>{{ originLabels[b.originType] }}</td>
-            <td>{{ originOf(b) }}</td>
-            <td>{{ fmtDate(b.minedAt) }}</td>
-            <td>{{ fmt(b.currentRemainder) }}</td>
-            <td>{{ b.storageLocations.join(", ") || "—" }}</td>
-            <td>{{ batchStatusLabels[b.status] }}</td>
-            <td>
-              <RouterLink :to="`/batches/${b.id}`" class="btn"
-                >Паспорт</RouterLink
-              >
-            </td>
-          </tr>
-          <tr v-if="!rows.length">
-            <td colspan="8" class="muted">Партий пока нет</td>
-          </tr>
-        </tbody>
-      </table>
+        <table>
+          <thead>
+            <tr>
+              <th>
+                Уникальный <br />
+                номер партии
+              </th>
+              <th>Источник <br />происхождения</th>
+              <th>
+                Участок добычи <br />
+                или поставщик
+              </th>
+              <th>Дата добычи или поступления</th>
+              <th>Текущий объем, т</th>
+              <th>Место хранения</th>
+              <th>Статус партии</th>
+              <th>Общая информация</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="b in rows" :key="b.id">
+              <td>{{ b.batchNumber }}</td>
+              <td>{{ originLabels[b.originType] }}</td>
+              <td>{{ originOf(b) }}</td>
+              <td>{{ fmtDate(b.minedAt) }}</td>
+              <td>{{ fmt(b.currentRemainder) }}</td>
+              <td>{{ b.storageLocations.join(", ") || "—" }}</td>
+              <td>{{ batchStatusLabels[b.status] }}</td>
+              <td>
+                <RouterLink :to="`/batches/${b.id}`" class="btn">
+                  Паспорт
+                </RouterLink>
+              </td>
+            </tr>
+            <tr v-if="!rows.length">
+              <td colspan="8" class="muted">Партий пока нет</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 

@@ -59,6 +59,22 @@ export interface BatchCreateRequest {
   initialWeight: number
 }
 
+export interface BatchUpdateRequest {
+  batchNumber: string
+  productType?: string
+  status: BatchStatus
+  coalGrade?: string
+  fraction?: string
+  originType: OriginType
+  deposit?: string
+  miningSite?: string
+  quarry?: string
+  shiftPeriod?: string
+  supplier?: string
+  minedAt?: string
+  initialWeight: number
+}
+
 export interface QualityHistoryRow {
   analysisDate: string | null
   ash: number | null

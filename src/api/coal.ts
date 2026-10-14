@@ -4,6 +4,7 @@ import type {
   AnalysisDto,
   BatchCreateRequest,
   BatchDto,
+  BatchUpdateRequest,
   DashboardDto,
   HeapCreateRequest,
   HeapDto,
@@ -22,6 +23,8 @@ export const batchesApi = {
   list: () => http.get<BatchDto[]>('/batches').then(r => r.data),
   get: (id: string) => http.get<BatchDto>(`/batches/${id}`).then(r => r.data),
   create: (req: BatchCreateRequest) => http.post<BatchDto>('/batches', req).then(r => r.data),
+  update: (id: string, req: BatchUpdateRequest) =>
+    http.put<BatchDto>(`/batches/${id}`, req).then(r => r.data),
   qualityHistory: (id: string) =>
     http.get<QualityHistoryRow[]>(`/batches/${id}/quality-history`).then(r => r.data)
 }
