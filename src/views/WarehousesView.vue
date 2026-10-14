@@ -57,6 +57,7 @@ onMounted(load)
     </div>
     <p v-if="error" class="error">{{ error }}</p>
     <section class="panel">
+    <div class="overflow-x-auto">
     <table>
       <thead>
         <tr>
@@ -82,7 +83,8 @@ onMounted(load)
           </tr>
           <tr v-if="open[w.id]">
             <td colspan="5">
-              <table v-if="heapsByWarehouse[w.id]?.length">
+              <div v-if="heapsByWarehouse[w.id]?.length" class="overflow-x-auto">
+              <table>
                 <thead>
                   <tr>
                     <th>Номер кучи</th>
@@ -100,6 +102,7 @@ onMounted(load)
                   </tr>
                 </tbody>
               </table>
+              </div>
               <span v-else class="muted">Куч на складе нет</span>
             </td>
           </tr>
@@ -109,6 +112,7 @@ onMounted(load)
         </tr>
       </tbody>
     </table>
+    </div>
     </section>
 
     <Modal v-if="showCreate" title="Новый склад" @close="showCreate = false">

@@ -158,6 +158,7 @@ onMounted(load)
     </div>
     <p v-if="error" class="error">{{ error }}</p>
     <section class="panel">
+    <div class="overflow-x-auto">
     <table>
       <thead>
         <tr>
@@ -193,6 +194,7 @@ onMounted(load)
         </tr>
       </tbody>
     </table>
+    </div>
     </section>
 
     <Modal v-if="showCreate" title="Новая куча" @close="showCreate = false">
@@ -307,6 +309,7 @@ onMounted(load)
       :title="`История кучи ${historyTarget.heapNumber}`"
       @close="historyTarget = null"
     >
+      <div class="overflow-x-auto">
       <table>
         <thead>
           <tr>
@@ -330,6 +333,7 @@ onMounted(load)
           </tr>
         </tbody>
       </table>
+      </div>
       <div class="actions">
         <button class="secondary" @click="historyTarget = null">Закрыть</button>
       </div>

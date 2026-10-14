@@ -115,6 +115,7 @@ onMounted(load)
 
     <section class="panel">
       <h2>Лаборатории</h2>
+    <div class="overflow-x-auto">
     <table>
       <thead>
         <tr>
@@ -130,10 +131,12 @@ onMounted(load)
         </tr>
       </tbody>
     </table>
+    </div>
     </section>
 
     <section class="panel">
       <h2>Результаты анализа угля</h2>
+    <div class="overflow-x-auto">
     <table>
       <thead>
         <tr>
@@ -161,6 +164,7 @@ onMounted(load)
         </tr>
       </tbody>
     </table>
+    </div>
     </section>
 
     <Modal v-if="showLab" title="Новая лаборатория" @close="showLab = false">

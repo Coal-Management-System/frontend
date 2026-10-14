@@ -68,6 +68,7 @@ onMounted(load)
     </div>
     <p v-if="error" class="error">{{ error }}</p>
     <section class="panel">
+    <div class="overflow-x-auto">
     <table>
       <thead>
         <tr>
@@ -99,6 +100,7 @@ onMounted(load)
         </tr>
       </tbody>
     </table>
+    </div>
     </section>
 
     <Modal v-if="showCreate" title="Новое движение" @close="showCreate = false">

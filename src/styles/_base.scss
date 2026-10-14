@@ -1,4 +1,4 @@
-@use 'tokens' as *;
+@use "tokens" as *;
 
 @layer base {
   html,
@@ -9,9 +9,21 @@
 
   body {
     background:
-      radial-gradient(1100px 620px at 88% -12%, rgba(59, 91, 219, 0.28), transparent 62%),
-      radial-gradient(900px 520px at -12% 18%, rgba(34, 211, 238, 0.1), transparent 58%),
-      radial-gradient(820px 520px at 52% 118%, rgba(139, 92, 246, 0.14), transparent 62%),
+      radial-gradient(
+        1100px 620px at 88% -12%,
+        rgba(59, 91, 219, 0.28),
+        transparent 62%
+      ),
+      radial-gradient(
+        900px 520px at -12% 18%,
+        rgba(34, 211, 238, 0.1),
+        transparent 58%
+      ),
+      radial-gradient(
+        820px 520px at 52% 118%,
+        rgba(139, 92, 246, 0.14),
+        transparent 62%
+      ),
       $night;
     background-attachment: fixed;
     color: $ink;
@@ -49,9 +61,7 @@
   }
 
   table {
-    display: block;
     width: 100%;
-    overflow-x: auto;
     border-collapse: collapse;
     font-size: 0.85rem;
   }
@@ -105,12 +115,12 @@
     background: $option-bg;
     color: $ink;
   }
-  input[type='checkbox'] {
+  input[type="checkbox"] {
     width: 16px;
     height: 16px;
     accent-color: $neon-cyan;
   }
-  input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     filter: invert(0.7);
   }
 

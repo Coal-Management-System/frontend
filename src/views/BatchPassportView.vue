@@ -107,6 +107,7 @@ function valueOf(a: AnalysisDto, key: string): string {
       <div v-else-if="tab === 'quality'">
         <section class="panel">
           <h2>История качества</h2>
+        <div class="overflow-x-auto">
         <table>
           <thead>
             <tr>
@@ -130,10 +131,12 @@ function valueOf(a: AnalysisDto, key: string): string {
             </tr>
           </tbody>
         </table>
+        </div>
         </section>
 
         <section class="panel">
           <h2>Результаты анализов</h2>
+        <div class="overflow-x-auto">
         <table>
           <thead>
             <tr>
@@ -165,6 +168,7 @@ function valueOf(a: AnalysisDto, key: string): string {
             </tr>
           </tbody>
         </table>
+        </div>
         </section>
         <p class="muted">Добавить результат анализа можно в разделе «Лаборатории».</p>
       </div>
