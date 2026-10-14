@@ -1,0 +1,70 @@
+name: CI/CD
+
+# Deploys only when a version tag is pushed:
+#   git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# Two overlapping deploys would race on the same web root.
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+env:
+  SERVER_HOST: ${{ secrets.SERVER_HOST }}
+  SERVER_USER: ${{ secrets.SERVER_USER }}
+  SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+  WEB_ROOT: /var/www/coal.jemsit.net
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # 24.x matches the toolchain this project is developed and verified on.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 'npm run build' is 'vue-tsc --noEmit && vite build', so a type error
+      # fails the deploy before anything reaches the server.
+      # No .env.production is written (unlike the blog): the API base is the
+      # relative '/api', so the bundle is domain-agnostic.
+      - name: Build
+        run: npm run build
+
+      - name: Install the deploy key on the runner
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/server_key
+          chmod 600 ~/.ssh/server_key
+          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # rsync --delete instead of 'rm -rf $WEB_ROOT/*' + copy: stale hashed
+      # assets are removed without a window where the site serves nothing.
+      # The web root and the nginx site are provisioned by
+      # deploy_frontend.yml in ~/Desktop/IoC/coal-transport, which must have
+      # run once before this workflow can succeed.
+      - name: Publish dist
+        run: |
+          set -euo pipefail
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/server_key" \
+            dist/ "$SERVER_USER@$SERVER_HOST:${WEB_ROOT:?}/"
+
+      - name: Fix ownership
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/server_key "$SERVER_USER@$SERVER_HOST" \
+            "chown -R www-data:www-data '${WEB_ROOT:?}'"
