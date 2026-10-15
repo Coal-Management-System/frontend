@@ -11,6 +11,7 @@ const open = ref<Record<string, boolean>>({})
 const error = ref('')
 const showCreate = ref(false)
 const saving = ref(false)
+const WAREHOUSE_PREFIX = 'Ск-'
 
 const form = reactive<WarehouseCreateRequest>({ number: '', location: '', status: 'ACTIVE' })
 
@@ -31,10 +32,15 @@ async function togglePiles(w: WarehouseDto) {
 }
 
 async function submit() {
-  saving.value = true
   error.value = ''
+  const number = form.number.trim()
+  if (!number) {
+    error.value = 'Укажите номер склада'
+    return
+  }
+  saving.value = true
   try {
-    await warehousesApi.create({ ...form })
+    await warehousesApi.create({ ...form, number: `${WAREHOUSE_PREFIX}${number}` })
     showCreate.value = false
     form.number = ''
     form.location = ''
@@ -119,7 +125,14 @@ onMounted(load)
       <div class="form-grid">
         <label>
           Номер
-          <input v-model="form.number" />
+          <div class="flex items-stretch">
+            <span
+              class="flex items-center rounded-l-[10px] border border-r-0 border-line px-3 text-mute select-none"
+            >
+              {{ WAREHOUSE_PREFIX }}
+            </span>
+            <input v-model="form.number" class="!rounded-l-none flex-1 min-w-0" />
+          </div>
         </label>
         <label>
           Место положения
