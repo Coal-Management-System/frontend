@@ -9,6 +9,7 @@ import type {
   LabDto,
 } from "@/api/types";
 import { errMsg, fmtDate, indicatorLabels, stageLabels } from "@/lib/format";
+import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
 
 const labs = ref<LabDto[]>([]);
@@ -25,7 +26,7 @@ const indicators = Object.keys(indicatorLabels) as Indicator[];
 
 interface ValueRow {
   indicator: Indicator;
-  value: number;
+  value: number | null;
   unit: string;
 }
 
@@ -55,7 +56,7 @@ async function load() {
 }
 
 function addRow() {
-  form.values.push({ indicator: "ASH", value: 0, unit: "%" });
+  form.values.push({ indicator: "ASH", value: null, unit: "%" });
 }
 
 async function submitLab() {
@@ -74,13 +75,13 @@ async function submitLab() {
 }
 
 async function submitAnalysis() {
-  saving.value = true;
   error.value = "";
   const sample = form.sampleNumber.trim();
   if (!sample) {
     error.value = "Укажите номер пробы";
     return;
   }
+  saving.value = true;
   try {
     const req: AnalysisCreateRequest = {
       sampleNumber: `${SAMPLE_PREFIX}${sample}`,
@@ -95,7 +96,7 @@ async function submitAnalysis() {
       stage: form.stage,
       values: form.values.map((v) => ({
         indicator: v.indicator,
-        value: v.value,
+        value: v.value ?? 0,
         unit: v.unit || undefined,
       })),
     };
@@ -271,7 +272,7 @@ onMounted(load);
         </label>
         <label>
           Фактическое значение
-          <input v-model.number="v.value" type="number" step="0.001" />
+          <DecimalInput v-model="v.value" :decimals="3" />
         </label>
         <label>
           Единица

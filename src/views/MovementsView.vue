@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { batchesApi, pilesApi, movementsApi, qrImageUrl } from '@/api/coal'
 import type { BatchDto, PileDto, MovementCreateRequest, MovementDto } from '@/api/types'
 import { errMsg, fmt, fmtDate, operationLabels } from '@/lib/format'
+import DecimalInput from '@/components/DecimalInput.vue'
 import Modal from '@/components/Modal.vue'
 
 const rows = ref<MovementDto[]>([])
@@ -12,11 +13,13 @@ const error = ref('')
 const showCreate = ref(false)
 const saving = ref(false)
 
-const form = reactive<MovementCreateRequest & { batchId: string; pileId: string }>({
+const form = reactive<
+  Omit<MovementCreateRequest, 'volume'> & { batchId: string; pileId: string; volume: number | null }
+>({
   batchId: '',
   pileId: '',
   operation: 'PILE_TRANSFERRED',
-  volume: 0,
+  volume: null,
   fromLocation: '',
   toLocation: '',
   originSource: ''
@@ -43,7 +46,7 @@ async function submit() {
       batchId: form.batchId || null,
       pileId: form.pileId || null,
       operation: form.operation,
-      volume: form.volume,
+      volume: form.volume ?? 0,
       fromLocation: form.fromLocation || undefined,
       toLocation: form.toLocation || undefined,
       originSource: form.originSource || undefined
@@ -130,7 +133,7 @@ onMounted(load)
         </label>
         <label>
           Объем, т
-          <input v-model.number="form.volume" type="number" min="0" step="0.01" />
+          <DecimalInput v-model="form.volume" />
         </label>
         <label>
           Откуда

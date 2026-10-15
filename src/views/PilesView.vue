@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { batchesApi, pilesApi, warehousesApi } from '@/api/coal'
 import type { BatchDto, PileDto, MovementDto, WarehouseDto } from '@/api/types'
 import { errMsg, fmt, fmtDate, pileStatusLabels, operationLabels } from '@/lib/format'
+import DecimalInput from '@/components/DecimalInput.vue'
 import Modal from '@/components/Modal.vue'
 
 const rows = ref<PileDto[]>([])
@@ -20,14 +21,14 @@ const history = ref<MovementDto[]>([])
 
 const createForm = reactive({
   pileNumber: '',
-  volume: 0,
+  volume: null as number | null,
   warehouseId: '',
   originSource: '',
   batchIds: [] as string[]
 })
 
 const splitForm = reactive({
-  volume: 0,
+  volume: null as number | null,
   toWarehouseId: '',
   newBatchNumber: '',
   sendImmediately: false
@@ -51,7 +52,7 @@ async function load() {
 
 function openSplit(h: PileDto) {
   splitTarget.value = h
-  splitForm.volume = 0
+  splitForm.volume = null
   splitForm.toWarehouseId = h.warehouseId || ''
   splitForm.newBatchNumber = ''
   splitForm.sendImmediately = false
@@ -73,14 +74,14 @@ async function submitCreate() {
   try {
     await pilesApi.create({
       pileNumber: createForm.pileNumber,
-      volume: createForm.volume,
+      volume: createForm.volume ?? 0,
       warehouseId: createForm.warehouseId || null,
       originSource: createForm.originSource || undefined,
       batchIds: createForm.batchIds
     })
     showCreate.value = false
     createForm.pileNumber = ''
-    createForm.volume = 0
+    createForm.volume = null
     createForm.batchIds = []
     await load()
   } catch (e) {
@@ -96,7 +97,7 @@ async function submitSplit() {
   error.value = ''
   try {
     await pilesApi.split(splitTarget.value.id, {
-      volume: splitForm.volume,
+      volume: splitForm.volume ?? 0,
       toWarehouseId: splitForm.toWarehouseId || null,
       newBatchNumber: splitForm.newBatchNumber,
       sendImmediately: splitForm.sendImmediately
@@ -205,7 +206,7 @@ onMounted(load)
         </label>
         <label>
           Объем, т
-          <input v-model.number="createForm.volume" type="number" min="0" step="0.01" />
+          <DecimalInput v-model="createForm.volume" />
         </label>
         <label>
           Место хранения (склад)
@@ -239,7 +240,7 @@ onMounted(load)
       <div class="form-grid">
         <label>
           Объем отделения, т
-          <input v-model.number="splitForm.volume" type="number" min="0" step="0.01" />
+          <DecimalInput v-model="splitForm.volume" />
         </label>
         <label>
           Куда (склад)

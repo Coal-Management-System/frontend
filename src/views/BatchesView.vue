@@ -10,14 +10,21 @@ import {
   fmtDate,
   originLabels,
 } from "@/lib/format";
+import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
 
 const rows = ref<BatchDto[]>([]);
 const error = ref("");
 const showCreate = ref(false);
 const saving = ref(false);
+const BATCH_PREFIX = "П-";
 
-const form = reactive<BatchCreateRequest & { minedAtLocal: string }>({
+const form = reactive<
+  Omit<BatchCreateRequest, "initialWeight"> & {
+    minedAtLocal: string;
+    initialWeight: number | null;
+  }
+>({
   batchNumber: "",
   productType: "",
   coalGrade: "",
@@ -29,7 +36,7 @@ const form = reactive<BatchCreateRequest & { minedAtLocal: string }>({
   shiftPeriod: "",
   supplier: "",
   minedAtLocal: "",
-  initialWeight: 0,
+  initialWeight: null,
 });
 
 async function load() {
@@ -48,11 +55,16 @@ function originOf(b: BatchDto): string {
 }
 
 async function submit() {
-  saving.value = true;
   error.value = "";
+  const number = form.batchNumber.trim();
+  if (!number) {
+    error.value = "Укажите номер партии";
+    return;
+  }
+  saving.value = true;
   try {
     const payload: BatchCreateRequest = {
-      batchNumber: form.batchNumber,
+      batchNumber: `${BATCH_PREFIX}${number}`,
       productType: form.productType || undefined,
       coalGrade: form.coalGrade || undefined,
       fraction: form.fraction || undefined,
@@ -65,7 +77,7 @@ async function submit() {
       minedAt: form.minedAtLocal
         ? new Date(form.minedAtLocal).toISOString()
         : undefined,
-      initialWeight: form.initialWeight,
+      initialWeight: form.initialWeight ?? 0,
     };
     await batchesApi.create(payload);
     showCreate.value = false;
@@ -91,7 +103,7 @@ function resetForm() {
     shiftPeriod: "",
     supplier: "",
     minedAtLocal: "",
-    initialWeight: 0,
+    initialWeight: null,
   });
 }
 
@@ -157,7 +169,17 @@ onMounted(load);
       <div class="form-grid">
         <label>
           Номер партии
-          <input v-model="form.batchNumber" required />
+          <div class="flex items-stretch">
+            <span
+              class="flex items-center rounded-l-[10px] border border-r-0 border-line px-3 text-mute select-none"
+            >
+              {{ BATCH_PREFIX }}
+            </span>
+            <input
+              v-model="form.batchNumber"
+              class="!rounded-l-none flex-1 min-w-0"
+            />
+          </div>
         </label>
         <label>
           Тип продукции
@@ -180,12 +202,7 @@ onMounted(load);
         </label>
         <label>
           Объем (тонн)
-          <input
-            v-model.number="form.initialWeight"
-            type="number"
-            min="0"
-            step="0.01"
-          />
+          <DecimalInput v-model="form.initialWeight" />
         </label>
         <label>
           Месторождение

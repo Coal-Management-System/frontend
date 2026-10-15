@@ -19,6 +19,7 @@ import {
   originLabels,
   stageLabels,
 } from "@/lib/format";
+import DecimalInput from "@/components/DecimalInput.vue";
 
 const route = useRoute();
 const id = route.params.id as string;
@@ -48,19 +49,6 @@ const form = reactive({
   minedAtLocal: "",
   initialWeight: null as number | null,
 });
-
-const weightText = ref(form.initialWeight?.toString() ?? "");
-function onWeightInput(e: Event) {
-  const el = e.target as HTMLInputElement;
-  let v = el.value
-    .replace(",", ".") // allow comma as decimal separator
-    .replace(/[^\d.]/g, "") // digits and dot only
-    .replace(/(\..*)\./g, "$1") // single dot
-    .replace(/^(\d*\.\d{0,2}).*$/, "$1"); // max 2 decimals
-  el.value = v; // force the visible value
-  weightText.value = v;
-  form.initialWeight = v === "" || v === "." ? null : Number(v);
-}
 
 function toLocalInput(iso: string | null): string {
   if (!iso) return "";
@@ -262,13 +250,7 @@ function resetForm() {
         <div class="form-grid">
           <label>
             Первоначальный вес, т
-            <input
-              v-model.number="form.initialWeight"
-              type="text"
-              inputmode="decimal"
-              autocomplete="off"
-              @input="onWeightInput"
-            />
+            <DecimalInput v-model="form.initialWeight" />
           </label>
         </div>
         <dl class="kv mt-4">
