@@ -25,6 +25,13 @@ export const batchesApi = {
   create: (req: BatchCreateRequest) => http.post<BatchDto>('/batches', req).then(r => r.data),
   update: (id: string, req: BatchUpdateRequest) =>
     http.put<BatchDto>(`/batches/${id}`, req).then(r => r.data),
+  remove: (id: string, adminKey: string, confirmNumber: string) =>
+    http
+      .delete<void>(`/batches/${id}`, {
+        headers: { 'X-Admin-Key': adminKey },
+        params: { confirmNumber }
+      })
+      .then(() => undefined),
   qualityHistory: (id: string) =>
     http.get<QualityHistoryRow[]>(`/batches/${id}/quality-history`).then(r => r.data)
 }

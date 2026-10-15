@@ -1,46 +1,56 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { batchesApi, pilesApi, movementsApi, qrImageUrl } from '@/api/coal'
-import type { BatchDto, PileDto, MovementCreateRequest, MovementDto } from '@/api/types'
-import { errMsg, fmt, fmtDate, operationLabels } from '@/lib/format'
-import DecimalInput from '@/components/DecimalInput.vue'
-import Modal from '@/components/Modal.vue'
+import { onMounted, reactive, ref } from "vue";
+import { batchesApi, pilesApi, movementsApi, qrImageUrl } from "@/api/coal";
+import type {
+  BatchDto,
+  PileDto,
+  MovementCreateRequest,
+  MovementDto,
+} from "@/api/types";
+import { errMsg, fmt, fmtDate, operationLabels } from "@/lib/format";
+import DecimalInput from "@/components/DecimalInput.vue";
+import Modal from "@/components/Modal.vue";
 
-const rows = ref<MovementDto[]>([])
-const batches = ref<BatchDto[]>([])
-const piles = ref<PileDto[]>([])
-const error = ref('')
-const showCreate = ref(false)
-const saving = ref(false)
+const rows = ref<MovementDto[]>([]);
+const batches = ref<BatchDto[]>([]);
+const piles = ref<PileDto[]>([]);
+const error = ref("");
+const showCreate = ref(false);
+const saving = ref(false);
+const qrTarget = ref<MovementDto | null>(null);
 
 const form = reactive<
-  Omit<MovementCreateRequest, 'volume'> & { batchId: string; pileId: string; volume: number | null }
+  Omit<MovementCreateRequest, "volume"> & {
+    batchId: string;
+    pileId: string;
+    volume: number | null;
+  }
 >({
-  batchId: '',
-  pileId: '',
-  operation: 'PILE_TRANSFERRED',
+  batchId: "",
+  pileId: "",
+  operation: "PILE_TRANSFERRED",
   volume: null,
-  fromLocation: '',
-  toLocation: '',
-  originSource: ''
-})
+  fromLocation: "",
+  toLocation: "",
+  originSource: "",
+});
 
 async function load() {
-  error.value = ''
+  error.value = "";
   try {
-    ;[rows.value, batches.value, piles.value] = await Promise.all([
+    [rows.value, batches.value, piles.value] = await Promise.all([
       movementsApi.list(),
       batchesApi.list(),
-      pilesApi.list()
-    ])
+      pilesApi.list(),
+    ]);
   } catch (e) {
-    error.value = errMsg(e)
+    error.value = errMsg(e);
   }
 }
 
 async function submit() {
-  saving.value = true
-  error.value = ''
+  saving.value = true;
+  error.value = "";
   try {
     await movementsApi.create({
       batchId: form.batchId || null,
@@ -49,18 +59,18 @@ async function submit() {
       volume: form.volume ?? 0,
       fromLocation: form.fromLocation || undefined,
       toLocation: form.toLocation || undefined,
-      originSource: form.originSource || undefined
-    })
-    showCreate.value = false
-    await load()
+      originSource: form.originSource || undefined,
+    });
+    showCreate.value = false;
+    await load();
   } catch (e) {
-    error.value = errMsg(e)
+    error.value = errMsg(e);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
-onMounted(load)
+onMounted(load);
 </script>
 
 <template>
@@ -71,40 +81,71 @@ onMounted(load)
     </div>
     <p v-if="error" class="error">{{ error }}</p>
     <section class="panel">
-    <div class="overflow-x-auto">
-    <table>
-      <thead>
-        <tr>
-          <th>Уникальный номер партии</th>
-          <th>Штабель</th>
-          <th>Операция</th>
-          <th>Объем, т</th>
-          <th>Откуда</th>
-          <th>Куда</th>
-          <th>Дата</th>
-          <th>QR-Code</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="m in rows" :key="m.id">
-          <td>{{ m.batchNumber || '—' }}</td>
-          <td>{{ m.pileNumber || '—' }}</td>
-          <td>{{ operationLabels[m.operation] }}</td>
-          <td>{{ fmt(m.volume) }}</td>
-          <td>{{ m.fromLocation || '—' }}</td>
-          <td>{{ m.toLocation || '—' }}</td>
-          <td>{{ fmtDate(m.createdAt) }}</td>
-          <td>
-            <RouterLink :to="`/qr/movement/${m.id}`" class="btn secondary">Показать</RouterLink>
-          </td>
-        </tr>
-        <tr v-if="!rows.length">
-          <td colspan="8" class="muted">Движений пока нет</td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Уникальный номер партии</th>
+              <th>Штабель</th>
+              <th>Операция</th>
+              <th>Объем, т</th>
+              <th>Откуда</th>
+              <th>Куда</th>
+              <th>Дата</th>
+              <th>QR-Code</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in rows" :key="m.id">
+              <td>{{ m.batchNumber || "—" }}</td>
+              <td>{{ m.pileNumber || "—" }}</td>
+              <td>{{ operationLabels[m.operation] }}</td>
+              <td>{{ fmt(m.volume) }}</td>
+              <td>{{ m.fromLocation || "—" }}</td>
+              <td>{{ m.toLocation || "—" }}</td>
+              <td>{{ fmtDate(m.createdAt) }}</td>
+              <td>
+                <button class="secondary" @click="qrTarget = m">
+                  Показать
+                </button>
+              </td>
+            </tr>
+            <tr v-if="!rows.length">
+              <td colspan="8" class="muted">Движений пока нет</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
+
+    <Modal
+      v-if="qrTarget"
+      :title="`QR-код движения${qrTarget.batchNumber ? ' · ' + qrTarget.batchNumber : ''}`"
+      @close="qrTarget = null"
+      class="flex"
+    >
+      <div class="flex flex-col items-center">
+        <div class="qr-box">
+          <img
+            :src="qrImageUrl('movement', qrTarget.id)"
+            alt="QR-код"
+            width="320"
+            height="320"
+          />
+          <p>
+            <RouterLink
+              :to="`/qr/movement/${qrTarget.id}`"
+              class="btn secondary text-black"
+            >
+              Открыть страницу
+            </RouterLink>
+          </p>
+        </div>
+        <div class="actions">
+          <button class="secondary" @click="qrTarget = null">Закрыть</button>
+        </div>
+      </div>
+    </Modal>
 
     <Modal v-if="showCreate" title="Новое движение" @close="showCreate = false">
       <div class="form-grid">
@@ -112,14 +153,18 @@ onMounted(load)
           Партия
           <select v-model="form.batchId">
             <option value="">Не указана</option>
-            <option v-for="b in batches" :key="b.id" :value="b.id">{{ b.batchNumber }}</option>
+            <option v-for="b in batches" :key="b.id" :value="b.id">
+              {{ b.batchNumber }}
+            </option>
           </select>
         </label>
         <label>
           Штабель
           <select v-model="form.pileId">
             <option value="">Не указана</option>
-            <option v-for="h in piles" :key="h.id" :value="h.id">{{ h.pileNumber }}</option>
+            <option v-for="h in piles" :key="h.id" :value="h.id">
+              {{ h.pileNumber }}
+            </option>
           </select>
         </label>
         <label>

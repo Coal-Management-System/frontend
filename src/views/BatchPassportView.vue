@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { batchesApi, labsApi, qrImageUrl } from "@/api/coal";
 import type {
   AnalysisDto,
@@ -20,8 +20,10 @@ import {
   stageLabels,
 } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
+import Modal from "@/components/Modal.vue";
 
 const route = useRoute();
+const router = useRouter();
 const id = route.params.id as string;
 
 const batch = ref<BatchDto | null>(null);
@@ -49,6 +51,35 @@ const form = reactive({
   minedAtLocal: "",
   initialWeight: null as number | null,
 });
+
+// deletion: step 1 = warning, step 2 = type the batch number + admin key
+const deleteStep = ref<0 | 1 | 2>(0);
+const deleteConfirm = ref("");
+const deleteKey = ref("");
+const deleteError = ref("");
+const deleting = ref(false);
+
+function openDelete() {
+  deleteStep.value = 1;
+  deleteConfirm.value = "";
+  deleteKey.value = "";
+  deleteError.value = "";
+}
+
+async function confirmDelete() {
+  if (!batch.value || deleteConfirm.value !== batch.value.batchNumber) return;
+  deleting.value = true;
+  deleteError.value = "";
+  try {
+    await batchesApi.remove(batch.value.id, deleteKey.value, deleteConfirm.value);
+    deleteStep.value = 0;
+    await router.push("/batches");
+  } catch (e) {
+    deleteError.value = errMsg(e);
+  } finally {
+    deleting.value = false;
+  }
+}
 
 function toLocalInput(iso: string | null): string {
   if (!iso) return "";
@@ -139,8 +170,56 @@ function resetForm() {
           </button>
           <button :disabled="saving" @click="save">Сохранить</button>
           <RouterLink to="/batches" class="btn secondary">К списку</RouterLink>
+          <button class="danger" :disabled="saving" @click="openDelete">
+            Удалить
+          </button>
         </div>
       </div>
+
+      <Modal
+        v-if="deleteStep"
+        :title="`Удаление партии № ${batch.batchNumber}`"
+        @close="deleteStep = 0"
+      >
+        <template v-if="deleteStep === 1">
+          <p>
+            Партия будет удалена безвозвратно. Удаление возможно только если по
+            партии нет штабелей, движений, лабораторных анализов и производных
+            партий.
+          </p>
+          <div class="actions">
+            <button class="secondary" @click="deleteStep = 0">Отмена</button>
+            <button class="danger" @click="deleteStep = 2">Продолжить</button>
+          </div>
+        </template>
+        <template v-else>
+          <div class="form-grid">
+            <label class="full">
+              Введите номер партии «{{ batch.batchNumber }}» для подтверждения
+              <input v-model="deleteConfirm" autocomplete="off" />
+            </label>
+            <label class="full">
+              Ключ администратора
+              <input v-model="deleteKey" type="password" autocomplete="off" />
+            </label>
+          </div>
+          <p v-if="deleteError" class="error">{{ deleteError }}</p>
+          <div class="actions">
+            <button class="secondary" @click="deleteStep = 0">Отмена</button>
+            <button
+              class="danger"
+              :disabled="
+                deleting ||
+                !deleteKey ||
+                deleteConfirm !== batch.batchNumber
+              "
+              @click="confirmDelete"
+            >
+              Удалить навсегда
+            </button>
+          </div>
+        </template>
+      </Modal>
 
       <div class="tabs">
         <button :class="{ active: tab === 'general' }" @click="tab = 'general'">

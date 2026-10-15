@@ -1,201 +1,215 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { batchesApi, pilesApi, warehousesApi } from '@/api/coal'
-import type { BatchDto, PileDto, MovementDto, WarehouseDto } from '@/api/types'
-import { errMsg, fmt, fmtDate, pileStatusLabels, operationLabels } from '@/lib/format'
-import DecimalInput from '@/components/DecimalInput.vue'
-import Modal from '@/components/Modal.vue'
+import { onMounted, reactive, ref } from "vue";
+import { batchesApi, pilesApi, warehousesApi } from "@/api/coal";
+import type { BatchDto, PileDto, MovementDto, WarehouseDto } from "@/api/types";
+import {
+  errMsg,
+  fmt,
+  fmtDate,
+  pileStatusLabels,
+  operationLabels,
+} from "@/lib/format";
+import DecimalInput from "@/components/DecimalInput.vue";
+import Modal from "@/components/Modal.vue";
 
-const rows = ref<PileDto[]>([])
-const warehouses = ref<WarehouseDto[]>([])
-const batches = ref<BatchDto[]>([])
-const error = ref('')
-const saving = ref(false)
+const rows = ref<PileDto[]>([]);
+const warehouses = ref<WarehouseDto[]>([]);
+const batches = ref<BatchDto[]>([]);
+const error = ref("");
+const saving = ref(false);
 
-const showCreate = ref(false)
-const splitTarget = ref<PileDto | null>(null)
-const mergeMode = ref(false)
-const transferTarget = ref<PileDto | null>(null)
-const historyTarget = ref<PileDto | null>(null)
-const history = ref<MovementDto[]>([])
+const showCreate = ref(false);
+const splitTarget = ref<PileDto | null>(null);
+const mergeMode = ref(false);
+const transferTarget = ref<PileDto | null>(null);
+const historyTarget = ref<PileDto | null>(null);
+const history = ref<MovementDto[]>([]);
 
 const createForm = reactive({
-  pileNumber: '',
+  pileNumber: "",
   volume: null as number | null,
-  warehouseId: '',
-  originSource: '',
-  batchIds: [] as string[]
-})
+  warehouseId: "",
+  originSource: "",
+  batchIds: [] as string[],
+});
 
 const splitForm = reactive({
   volume: null as number | null,
-  toWarehouseId: '',
-  newBatchNumber: '',
-  sendImmediately: false
-})
+  toWarehouseId: "",
+  newBatchNumber: "",
+  sendImmediately: false,
+});
 
-const mergeForm = reactive({ targetPileId: '', sourcePileIds: [] as string[] })
-const transferForm = reactive({ toWarehouseId: '' })
+const mergeForm = reactive({ targetPileId: "", sourcePileIds: [] as string[] });
+const transferForm = reactive({ toWarehouseId: "" });
 
 async function load() {
-  error.value = ''
+  error.value = "";
   try {
-    ;[rows.value, warehouses.value, batches.value] = await Promise.all([
+    [rows.value, warehouses.value, batches.value] = await Promise.all([
       pilesApi.list(),
       warehousesApi.list(),
-      batchesApi.list()
-    ])
+      batchesApi.list(),
+    ]);
   } catch (e) {
-    error.value = errMsg(e)
+    error.value = errMsg(e);
   }
 }
 
 function openSplit(h: PileDto) {
-  splitTarget.value = h
-  splitForm.volume = null
-  splitForm.toWarehouseId = h.warehouseId || ''
-  splitForm.newBatchNumber = ''
-  splitForm.sendImmediately = false
+  splitTarget.value = h;
+  splitForm.volume = null;
+  splitForm.toWarehouseId = h.warehouseId || "";
+  splitForm.newBatchNumber = "";
+  splitForm.sendImmediately = false;
 }
 
 function openTransfer(h: PileDto) {
-  transferTarget.value = h
-  transferForm.toWarehouseId = h.warehouseId || ''
+  transferTarget.value = h;
+  transferForm.toWarehouseId = h.warehouseId || "";
 }
 
 async function openHistory(h: PileDto) {
-  historyTarget.value = h
-  history.value = await pilesApi.history(h.id)
+  historyTarget.value = h;
+  history.value = await pilesApi.history(h.id);
 }
 
 async function submitCreate() {
-  saving.value = true
-  error.value = ''
+  saving.value = true;
+  error.value = "";
   try {
     await pilesApi.create({
       pileNumber: createForm.pileNumber,
       volume: createForm.volume ?? 0,
       warehouseId: createForm.warehouseId || null,
       originSource: createForm.originSource || undefined,
-      batchIds: createForm.batchIds
-    })
-    showCreate.value = false
-    createForm.pileNumber = ''
-    createForm.volume = null
-    createForm.batchIds = []
-    await load()
+      batchIds: createForm.batchIds,
+    });
+    showCreate.value = false;
+    createForm.pileNumber = "";
+    createForm.volume = null;
+    createForm.batchIds = [];
+    await load();
   } catch (e) {
-    error.value = errMsg(e)
+    error.value = errMsg(e);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function submitSplit() {
-  if (!splitTarget.value) return
-  saving.value = true
-  error.value = ''
+  if (!splitTarget.value) return;
+  saving.value = true;
+  error.value = "";
   try {
     await pilesApi.split(splitTarget.value.id, {
       volume: splitForm.volume ?? 0,
       toWarehouseId: splitForm.toWarehouseId || null,
       newBatchNumber: splitForm.newBatchNumber,
-      sendImmediately: splitForm.sendImmediately
-    })
-    splitTarget.value = null
-    await load()
+      sendImmediately: splitForm.sendImmediately,
+    });
+    splitTarget.value = null;
+    await load();
   } catch (e) {
-    error.value = errMsg(e)
+    error.value = errMsg(e);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function submitMerge() {
-  saving.value = true
-  error.value = ''
+  saving.value = true;
+  error.value = "";
   try {
     await pilesApi.merge({
       targetPileId: mergeForm.targetPileId,
-      sourcePileIds: mergeForm.sourcePileIds
-    })
-    mergeMode.value = false
-    mergeForm.sourcePileIds = []
-    mergeForm.targetPileId = ''
-    await load()
+      sourcePileIds: mergeForm.sourcePileIds,
+    });
+    mergeMode.value = false;
+    mergeForm.sourcePileIds = [];
+    mergeForm.targetPileId = "";
+    await load();
   } catch (e) {
-    error.value = errMsg(e)
+    error.value = errMsg(e);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function submitTransfer() {
-  if (!transferTarget.value) return
-  saving.value = true
-  error.value = ''
+  if (!transferTarget.value) return;
+  saving.value = true;
+  error.value = "";
   try {
-    await pilesApi.transfer(transferTarget.value.id, { toWarehouseId: transferForm.toWarehouseId })
-    transferTarget.value = null
-    await load()
+    await pilesApi.transfer(transferTarget.value.id, {
+      toWarehouseId: transferForm.toWarehouseId,
+    });
+    transferTarget.value = null;
+    await load();
   } catch (e) {
-    error.value = errMsg(e)
+    error.value = errMsg(e);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
-onMounted(load)
+onMounted(load);
 </script>
 
 <template>
   <div>
     <div class="toolbar">
       <h1>Штабели угля</h1>
-      <div>
+      <div class="flex gap-5">
         <button class="secondary" @click="mergeMode = true">Объединить</button>
         <button @click="showCreate = true">Новый штабель +</button>
       </div>
     </div>
     <p v-if="error" class="error">{{ error }}</p>
     <section class="panel">
-    <div class="overflow-x-auto">
-    <table>
-      <thead>
-        <tr>
-          <th>Номер штабеля</th>
-          <th>Объем, т</th>
-          <th>Место хранения</th>
-          <th>Статус</th>
-          <th>Дата</th>
-          <th>Источник происхождения</th>
-          <th>Партии</th>
-          <th>Операция</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="h in rows" :key="h.id">
-          <td>{{ h.pileNumber }}</td>
-          <td>{{ fmt(h.volume) }}</td>
-          <td>{{ h.warehouseNumber || '—' }}</td>
-          <td>{{ pileStatusLabels[h.status] }}</td>
-          <td>{{ fmtDate(h.createdAt) }}</td>
-          <td>
-            {{ h.originSource || '—' }}
-            <button class="secondary" @click="openHistory(h)">история</button>
-          </td>
-          <td>{{ h.batchNumbers.join(', ') || '—' }}</td>
-          <td>
-            <button class="secondary" @click="openSplit(h)">Разделить</button>
-            <button class="secondary" @click="openTransfer(h)">Трансфер</button>
-          </td>
-        </tr>
-        <tr v-if="!rows.length">
-          <td colspan="8" class="muted">Штабелей пока нет</td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Номер штабеля</th>
+              <th>Объем, т</th>
+              <th>Место хранения</th>
+              <th>Статус</th>
+              <th>Дата</th>
+              <th>Источник происхождения</th>
+              <th>Партии</th>
+              <th>Операция</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="h in rows" :key="h.id">
+              <td>{{ h.pileNumber }}</td>
+              <td>{{ fmt(h.volume) }}</td>
+              <td>{{ h.warehouseNumber || "—" }}</td>
+              <td>{{ pileStatusLabels[h.status] }}</td>
+              <td>{{ fmtDate(h.createdAt) }}</td>
+              <td>
+                {{ h.originSource || "—" }}
+                <button class="secondary" @click="openHistory(h)">
+                  история
+                </button>
+              </td>
+              <td>{{ h.batchNumbers.join(", ") || "—" }}</td>
+              <td class="flex gap-2">
+                <button class="secondary" @click="openSplit(h)">
+                  Разделить
+                </button>
+                <button class="secondary" @click="openTransfer(h)">
+                  Трансфер
+                </button>
+              </td>
+            </tr>
+            <tr v-if="!rows.length">
+              <td colspan="8" class="muted">Штабелей пока нет</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <Modal v-if="showCreate" title="Новый штабель" @close="showCreate = false">
@@ -212,7 +226,9 @@ onMounted(load)
           Место хранения (склад)
           <select v-model="createForm.warehouseId">
             <option value="">Без склада</option>
-            <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.number }}</option>
+            <option v-for="w in warehouses" :key="w.id" :value="w.id">
+              {{ w.number }}
+            </option>
           </select>
         </label>
         <label>
@@ -222,7 +238,9 @@ onMounted(load)
         <label class="full">
           Партии в штабеле
           <select v-model="createForm.batchIds" multiple size="5">
-            <option v-for="b in batches" :key="b.id" :value="b.id">{{ b.batchNumber }}</option>
+            <option v-for="b in batches" :key="b.id" :value="b.id">
+              {{ b.batchNumber }}
+            </option>
           </select>
         </label>
       </div>
@@ -245,7 +263,9 @@ onMounted(load)
         <label>
           Куда (склад)
           <select v-model="splitForm.toWarehouseId">
-            <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.number }}</option>
+            <option v-for="w in warehouses" :key="w.id" :value="w.id">
+              {{ w.number }}
+            </option>
           </select>
         </label>
         <label class="full">
@@ -257,26 +277,36 @@ onMounted(load)
           Разделить и отправить в переработку
         </label>
       </div>
-      <p class="muted">При разделении штабеля автоматически создается новая партия.</p>
+      <p class="muted">
+        При разделении штабеля автоматически создается новая партия.
+      </p>
       <div class="actions">
         <button class="secondary" @click="splitTarget = null">Отмена</button>
         <button :disabled="saving" @click="submitSplit">Разделить</button>
       </div>
     </Modal>
 
-    <Modal v-if="mergeMode" title="Объединить штабели" @close="mergeMode = false">
+    <Modal
+      v-if="mergeMode"
+      title="Объединить штабели"
+      @close="mergeMode = false"
+    >
       <div class="form-grid">
         <label class="full">
           Целевой штабель
           <select v-model="mergeForm.targetPileId">
             <option value="" disabled>Выберите штабель</option>
-            <option v-for="h in rows" :key="h.id" :value="h.id">{{ h.pileNumber }}</option>
+            <option v-for="h in rows" :key="h.id" :value="h.id">
+              {{ h.pileNumber }}
+            </option>
           </select>
         </label>
         <label class="full">
           Штабели-источники
           <select v-model="mergeForm.sourcePileIds" multiple size="6">
-            <option v-for="h in rows" :key="h.id" :value="h.id">{{ h.pileNumber }}</option>
+            <option v-for="h in rows" :key="h.id" :value="h.id">
+              {{ h.pileNumber }}
+            </option>
           </select>
         </label>
       </div>
@@ -295,7 +325,9 @@ onMounted(load)
         <label class="full">
           Куда (склад)
           <select v-model="transferForm.toWarehouseId">
-            <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.number }}</option>
+            <option v-for="w in warehouses" :key="w.id" :value="w.id">
+              {{ w.number }}
+            </option>
           </select>
         </label>
       </div>
@@ -311,29 +343,29 @@ onMounted(load)
       @close="historyTarget = null"
     >
       <div class="overflow-x-auto">
-      <table>
-        <thead>
-          <tr>
-            <th>Операция</th>
-            <th>Объем, т</th>
-            <th>Откуда</th>
-            <th>Куда</th>
-            <th>Дата</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="m in history" :key="m.id">
-            <td>{{ operationLabels[m.operation] }}</td>
-            <td>{{ fmt(m.volume) }}</td>
-            <td>{{ m.fromLocation || '—' }}</td>
-            <td>{{ m.toLocation || '—' }}</td>
-            <td>{{ fmtDate(m.createdAt) }}</td>
-          </tr>
-          <tr v-if="!history.length">
-            <td colspan="5" class="muted">Движений пока нет</td>
-          </tr>
-        </tbody>
-      </table>
+        <table>
+          <thead>
+            <tr>
+              <th>Операция</th>
+              <th>Объем, т</th>
+              <th>Откуда</th>
+              <th>Куда</th>
+              <th>Дата</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in history" :key="m.id">
+              <td>{{ operationLabels[m.operation] }}</td>
+              <td>{{ fmt(m.volume) }}</td>
+              <td>{{ m.fromLocation || "—" }}</td>
+              <td>{{ m.toLocation || "—" }}</td>
+              <td>{{ fmtDate(m.createdAt) }}</td>
+            </tr>
+            <tr v-if="!history.length">
+              <td colspan="5" class="muted">Движений пока нет</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <div class="actions">
         <button class="secondary" @click="historyTarget = null">Закрыть</button>
