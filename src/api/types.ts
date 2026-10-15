@@ -1,6 +1,6 @@
 export type BatchStatus = 'NEW' | 'IN_PROCESSING' | 'READY_FOR_SHIPMENT' | 'SHIPPED'
 export type OriginType = 'OWN_MINING' | 'PURCHASED'
-export type HeapStatus = 'ACTIVE' | 'SPLIT' | 'MERGED' | 'TRANSFERRED' | 'EMPTY'
+export type PileStatus = 'ACTIVE' | 'SPLIT' | 'MERGED' | 'TRANSFERRED' | 'EMPTY'
 export type MovementOperation = 'PILE_CREATED' | 'PILE_MERGED' | 'PILE_SPLIT' | 'PILE_TRANSFERRED'
 export type AnalysisStage = 'INITIAL' | 'AFTER_ENRICHMENT' | 'BEFORE_SHIPMENT'
 export type AnalysisStatus = 'DRAFT' | 'UPLOADED'
@@ -39,8 +39,8 @@ export interface BatchDto {
   storageLocations: string[]
   sourceBatchIds: string[]
   sourceBatchNumbers: string[]
-  heapIds: string[]
-  heapNumbers: string[]
+  pileIds: string[]
+  pileNumbers: string[]
   createdAt: string
 }
 
@@ -83,40 +83,40 @@ export interface QualityHistoryRow {
   stage: AnalysisStage
 }
 
-export interface HeapDto {
+export interface PileDto {
   id: string
-  heapNumber: string
+  pileNumber: string
   volume: number
   warehouseId: string | null
   warehouseNumber: string | null
-  status: HeapStatus
+  status: PileStatus
   originSource: string | null
   batchIds: string[]
   batchNumbers: string[]
   createdAt: string
 }
 
-export interface HeapCreateRequest {
-  heapNumber: string
+export interface PileCreateRequest {
+  pileNumber: string
   volume: number
   warehouseId?: string | null
   originSource?: string
   batchIds?: string[]
 }
 
-export interface HeapSplitRequest {
+export interface PileSplitRequest {
   volume: number
   toWarehouseId?: string | null
   newBatchNumber: string
   sendImmediately: boolean
 }
 
-export interface HeapMergeRequest {
-  sourceHeapIds: string[]
-  targetHeapId: string
+export interface PileMergeRequest {
+  sourcePileIds: string[]
+  targetPileId: string
 }
 
-export interface HeapTransferRequest {
+export interface PileTransferRequest {
   toWarehouseId: string
 }
 
@@ -124,8 +124,8 @@ export interface MovementDto {
   id: string
   batchId: string | null
   batchNumber: string | null
-  heapId: string | null
-  heapNumber: string | null
+  pileId: string | null
+  pileNumber: string | null
   operation: MovementOperation
   volume: number
   fromLocation: string | null
@@ -137,7 +137,7 @@ export interface MovementDto {
 
 export interface MovementCreateRequest {
   batchId?: string | null
-  heapId?: string | null
+  pileId?: string | null
   operation: MovementOperation
   volume: number
   fromLocation?: string
@@ -190,7 +190,7 @@ export interface WarehouseDto {
   number: string
   location: string | null
   status: WarehouseStatus
-  heapCount: number
+  pileCount: number
   createdAt: string
 }
 
@@ -216,7 +216,7 @@ export interface DashboardDto {
   costPerTon: number | null
   profitPerTon: number | null
   batchCount: number
-  heapCount: number
+  pileCount: number
   warehouseCount: number
   labCount: number
 }

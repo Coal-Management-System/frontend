@@ -1,7 +1,7 @@
 import type {
   AnalysisStage,
   BatchStatus,
-  HeapStatus,
+  PileStatus,
   Indicator,
   MovementOperation,
   OriginType,
@@ -20,18 +20,18 @@ export const originLabels: Record<OriginType, string> = {
   PURCHASED: 'Закупной уголь'
 }
 
-export const heapStatusLabels: Record<HeapStatus, string> = {
-  ACTIVE: 'Активна',
-  SPLIT: 'Разделена',
-  MERGED: 'Объединена',
-  TRANSFERRED: 'Перемещена',
-  EMPTY: 'Пуста'
+export const pileStatusLabels: Record<PileStatus, string> = {
+  ACTIVE: 'Активен',
+  SPLIT: 'Разделен',
+  MERGED: 'Объединен',
+  TRANSFERRED: 'Перемещен',
+  EMPTY: 'Пуст'
 }
 
 export const operationLabels: Record<MovementOperation, string> = {
-  PILE_CREATED: 'Создание кучи',
-  PILE_MERGED: 'Слияние куч',
-  PILE_SPLIT: 'Разделение кучи',
+  PILE_CREATED: 'Создание штабеля',
+  PILE_MERGED: 'Слияние штабелей',
+  PILE_SPLIT: 'Разделение штабеля',
   PILE_TRANSFERRED: 'Трансфер'
 }
 
@@ -60,7 +60,7 @@ export const warehouseStatusLabels: Record<WarehouseStatus, string> = {
 const fieldLabels: Record<string, string> = {
   batchNumber: 'номер партии',
   initialWeight: 'объем партии',
-  heapNumber: 'номер кучи',
+  pileNumber: 'номер штабеля',
   volume: 'объем',
   newBatchNumber: 'номер новой партии',
   number: 'номер склада',
@@ -68,8 +68,8 @@ const fieldLabels: Record<string, string> = {
   sampleNumber: 'номер пробы',
   batchId: 'партия',
   labId: 'лаборатория',
-  sourceHeapIds: 'объединяемые кучи',
-  targetHeapId: 'куча-приемник',
+  sourcePileIds: 'объединяемые штабели',
+  targetPileId: 'штабель-приемник',
   toWarehouseId: 'склад назначения',
   operation: 'операция',
   indicator: 'показатель',

@@ -4,7 +4,7 @@ import BatchesView from '@/views/BatchesView.vue'
 import BatchPassportView from '@/views/BatchPassportView.vue'
 import LabsView from '@/views/LabsView.vue'
 import WarehousesView from '@/views/WarehousesView.vue'
-import HeapsView from '@/views/HeapsView.vue'
+import PilesView from '@/views/PilesView.vue'
 import MovementsView from '@/views/MovementsView.vue'
 import QrView from '@/views/QrView.vue'
 import QrResolveView from '@/views/QrResolveView.vue'
@@ -18,7 +18,7 @@ const router = createRouter({
     { path: '/batches/:id', name: 'batch-passport', component: BatchPassportView },
     { path: '/labs', name: 'labs', component: LabsView },
     { path: '/warehouses', name: 'warehouses', component: WarehousesView },
-    { path: '/heaps', name: 'heaps', component: HeapsView },
+    { path: '/piles', name: 'piles', component: PilesView },
     { path: '/movements', name: 'movements', component: MovementsView },
     { path: '/qr', name: 'qr', component: QrView },
     { path: '/qr/:type/:id', name: 'qr-resolve', component: QrResolveView }

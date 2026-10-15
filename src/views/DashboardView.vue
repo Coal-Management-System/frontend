@@ -81,7 +81,7 @@ onMounted(async () => {
             :value="fmt(dash.minedToday)"
             unit="т"
             tone="cyan"
-            :hint="`${dash.batchCount} партий · ${dash.heapCount} куч в учете`"
+            :hint="`${dash.batchCount} партий · ${dash.pileCount} штабелей в учете`"
           />
           <StatCard
             label="Передано в переработку"

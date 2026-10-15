@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { batchesApi, heapsApi, movementsApi, qrImageUrl } from '@/api/coal'
-import type { BatchDto, HeapDto, MovementCreateRequest, MovementDto } from '@/api/types'
+import { batchesApi, pilesApi, movementsApi, qrImageUrl } from '@/api/coal'
+import type { BatchDto, PileDto, MovementCreateRequest, MovementDto } from '@/api/types'
 import { errMsg, fmt, fmtDate, operationLabels } from '@/lib/format'
 import Modal from '@/components/Modal.vue'
 
 const rows = ref<MovementDto[]>([])
 const batches = ref<BatchDto[]>([])
-const heaps = ref<HeapDto[]>([])
+const piles = ref<PileDto[]>([])
 const error = ref('')
 const showCreate = ref(false)
 const saving = ref(false)
 
-const form = reactive<MovementCreateRequest & { batchId: string; heapId: string }>({
+const form = reactive<MovementCreateRequest & { batchId: string; pileId: string }>({
   batchId: '',
-  heapId: '',
+  pileId: '',
   operation: 'PILE_TRANSFERRED',
   volume: 0,
   fromLocation: '',
@@ -25,10 +25,10 @@ const form = reactive<MovementCreateRequest & { batchId: string; heapId: string 
 async function load() {
   error.value = ''
   try {
-    ;[rows.value, batches.value, heaps.value] = await Promise.all([
+    ;[rows.value, batches.value, piles.value] = await Promise.all([
       movementsApi.list(),
       batchesApi.list(),
-      heapsApi.list()
+      pilesApi.list()
     ])
   } catch (e) {
     error.value = errMsg(e)
@@ -41,7 +41,7 @@ async function submit() {
   try {
     await movementsApi.create({
       batchId: form.batchId || null,
-      heapId: form.heapId || null,
+      pileId: form.pileId || null,
       operation: form.operation,
       volume: form.volume,
       fromLocation: form.fromLocation || undefined,
@@ -73,7 +73,7 @@ onMounted(load)
       <thead>
         <tr>
           <th>Уникальный номер партии</th>
-          <th>Куча</th>
+          <th>Штабель</th>
           <th>Операция</th>
           <th>Объем, т</th>
           <th>Откуда</th>
@@ -85,7 +85,7 @@ onMounted(load)
       <tbody>
         <tr v-for="m in rows" :key="m.id">
           <td>{{ m.batchNumber || '—' }}</td>
-          <td>{{ m.heapNumber || '—' }}</td>
+          <td>{{ m.pileNumber || '—' }}</td>
           <td>{{ operationLabels[m.operation] }}</td>
           <td>{{ fmt(m.volume) }}</td>
           <td>{{ m.fromLocation || '—' }}</td>
@@ -113,18 +113,18 @@ onMounted(load)
           </select>
         </label>
         <label>
-          Куча
-          <select v-model="form.heapId">
+          Штабель
+          <select v-model="form.pileId">
             <option value="">Не указана</option>
-            <option v-for="h in heaps" :key="h.id" :value="h.id">{{ h.heapNumber }}</option>
+            <option v-for="h in piles" :key="h.id" :value="h.id">{{ h.pileNumber }}</option>
           </select>
         </label>
         <label>
           Операция
           <select v-model="form.operation">
-            <option value="PILE_CREATED">Создание кучи</option>
-            <option value="PILE_MERGED">Слияние куч</option>
-            <option value="PILE_SPLIT">Разделение кучи</option>
+            <option value="PILE_CREATED">Создание штабеля</option>
+            <option value="PILE_MERGED">Слияние штабелей</option>
+            <option value="PILE_SPLIT">Разделение штабеля</option>
             <option value="PILE_TRANSFERRED">Трансфер</option>
           </select>
         </label>

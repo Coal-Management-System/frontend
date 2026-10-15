@@ -253,8 +253,8 @@ function resetForm() {
         <dl class="kv mt-4">
           <dt>Партии-источники</dt>
           <dd>{{ batch.sourceBatchNumbers.join(", ") || "—" }}</dd>
-          <dt>Кучи</dt>
-          <dd>{{ batch.heapNumbers.join(", ") || "—" }}</dd>
+          <dt>Штабели</dt>
+          <dd>{{ batch.pileNumbers.join(", ") || "—" }}</dd>
         </dl>
       </section>
 

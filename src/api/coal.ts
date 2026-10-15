@@ -6,11 +6,11 @@ import type {
   BatchDto,
   BatchUpdateRequest,
   DashboardDto,
-  HeapCreateRequest,
-  HeapDto,
-  HeapMergeRequest,
-  HeapSplitRequest,
-  HeapTransferRequest,
+  PileCreateRequest,
+  PileDto,
+  PileMergeRequest,
+  PileSplitRequest,
+  PileTransferRequest,
   LabDto,
   MovementCreateRequest,
   MovementDto,
@@ -29,16 +29,16 @@ export const batchesApi = {
     http.get<QualityHistoryRow[]>(`/batches/${id}/quality-history`).then(r => r.data)
 }
 
-export const heapsApi = {
-  list: () => http.get<HeapDto[]>('/heaps').then(r => r.data),
-  get: (id: string) => http.get<HeapDto>(`/heaps/${id}`).then(r => r.data),
-  create: (req: HeapCreateRequest) => http.post<HeapDto>('/heaps', req).then(r => r.data),
-  history: (id: string) => http.get<MovementDto[]>(`/heaps/${id}/history`).then(r => r.data),
-  split: (id: string, req: HeapSplitRequest) =>
-    http.post<HeapDto>(`/heaps/${id}/split`, req).then(r => r.data),
-  merge: (req: HeapMergeRequest) => http.post<HeapDto>('/heaps/merge', req).then(r => r.data),
-  transfer: (id: string, req: HeapTransferRequest) =>
-    http.post<HeapDto>(`/heaps/${id}/transfer`, req).then(r => r.data)
+export const pilesApi = {
+  list: () => http.get<PileDto[]>('/piles').then(r => r.data),
+  get: (id: string) => http.get<PileDto>(`/piles/${id}`).then(r => r.data),
+  create: (req: PileCreateRequest) => http.post<PileDto>('/piles', req).then(r => r.data),
+  history: (id: string) => http.get<MovementDto[]>(`/piles/${id}/history`).then(r => r.data),
+  split: (id: string, req: PileSplitRequest) =>
+    http.post<PileDto>(`/piles/${id}/split`, req).then(r => r.data),
+  merge: (req: PileMergeRequest) => http.post<PileDto>('/piles/merge', req).then(r => r.data),
+  transfer: (id: string, req: PileTransferRequest) =>
+    http.post<PileDto>(`/piles/${id}/transfer`, req).then(r => r.data)
 }
 
 export const movementsApi = {
@@ -60,12 +60,12 @@ export const labsApi = {
 export const warehousesApi = {
   list: () => http.get<WarehouseDto[]>('/warehouses').then(r => r.data),
   create: (req: WarehouseCreateRequest) => http.post<WarehouseDto>('/warehouses', req).then(r => r.data),
-  heaps: (id: string) => http.get<HeapDto[]>(`/warehouses/${id}/heaps`).then(r => r.data)
+  piles: (id: string) => http.get<PileDto[]>(`/warehouses/${id}/piles`).then(r => r.data)
 }
 
 export const dashboardApi = {
   get: () => http.get<DashboardDto>('/dashboard').then(r => r.data)
 }
 
-export const qrImageUrl = (type: 'batch' | 'heap' | 'movement', id: string) =>
+export const qrImageUrl = (type: 'batch' | 'pile' | 'movement', id: string) =>
   `/api/qr/${type}/${id}.png`

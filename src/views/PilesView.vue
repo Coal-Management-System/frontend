@@ -1,25 +1,25 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { batchesApi, heapsApi, warehousesApi } from '@/api/coal'
-import type { BatchDto, HeapDto, MovementDto, WarehouseDto } from '@/api/types'
-import { errMsg, fmt, fmtDate, heapStatusLabels, operationLabels } from '@/lib/format'
+import { batchesApi, pilesApi, warehousesApi } from '@/api/coal'
+import type { BatchDto, PileDto, MovementDto, WarehouseDto } from '@/api/types'
+import { errMsg, fmt, fmtDate, pileStatusLabels, operationLabels } from '@/lib/format'
 import Modal from '@/components/Modal.vue'
 
-const rows = ref<HeapDto[]>([])
+const rows = ref<PileDto[]>([])
 const warehouses = ref<WarehouseDto[]>([])
 const batches = ref<BatchDto[]>([])
 const error = ref('')
 const saving = ref(false)
 
 const showCreate = ref(false)
-const splitTarget = ref<HeapDto | null>(null)
+const splitTarget = ref<PileDto | null>(null)
 const mergeMode = ref(false)
-const transferTarget = ref<HeapDto | null>(null)
-const historyTarget = ref<HeapDto | null>(null)
+const transferTarget = ref<PileDto | null>(null)
+const historyTarget = ref<PileDto | null>(null)
 const history = ref<MovementDto[]>([])
 
 const createForm = reactive({
-  heapNumber: '',
+  pileNumber: '',
   volume: 0,
   warehouseId: '',
   originSource: '',
@@ -33,14 +33,14 @@ const splitForm = reactive({
   sendImmediately: false
 })
 
-const mergeForm = reactive({ targetHeapId: '', sourceHeapIds: [] as string[] })
+const mergeForm = reactive({ targetPileId: '', sourcePileIds: [] as string[] })
 const transferForm = reactive({ toWarehouseId: '' })
 
 async function load() {
   error.value = ''
   try {
     ;[rows.value, warehouses.value, batches.value] = await Promise.all([
-      heapsApi.list(),
+      pilesApi.list(),
       warehousesApi.list(),
       batchesApi.list()
     ])
@@ -49,7 +49,7 @@ async function load() {
   }
 }
 
-function openSplit(h: HeapDto) {
+function openSplit(h: PileDto) {
   splitTarget.value = h
   splitForm.volume = 0
   splitForm.toWarehouseId = h.warehouseId || ''
@@ -57,29 +57,29 @@ function openSplit(h: HeapDto) {
   splitForm.sendImmediately = false
 }
 
-function openTransfer(h: HeapDto) {
+function openTransfer(h: PileDto) {
   transferTarget.value = h
   transferForm.toWarehouseId = h.warehouseId || ''
 }
 
-async function openHistory(h: HeapDto) {
+async function openHistory(h: PileDto) {
   historyTarget.value = h
-  history.value = await heapsApi.history(h.id)
+  history.value = await pilesApi.history(h.id)
 }
 
 async function submitCreate() {
   saving.value = true
   error.value = ''
   try {
-    await heapsApi.create({
-      heapNumber: createForm.heapNumber,
+    await pilesApi.create({
+      pileNumber: createForm.pileNumber,
       volume: createForm.volume,
       warehouseId: createForm.warehouseId || null,
       originSource: createForm.originSource || undefined,
       batchIds: createForm.batchIds
     })
     showCreate.value = false
-    createForm.heapNumber = ''
+    createForm.pileNumber = ''
     createForm.volume = 0
     createForm.batchIds = []
     await load()
@@ -95,7 +95,7 @@ async function submitSplit() {
   saving.value = true
   error.value = ''
   try {
-    await heapsApi.split(splitTarget.value.id, {
+    await pilesApi.split(splitTarget.value.id, {
       volume: splitForm.volume,
       toWarehouseId: splitForm.toWarehouseId || null,
       newBatchNumber: splitForm.newBatchNumber,
@@ -114,13 +114,13 @@ async function submitMerge() {
   saving.value = true
   error.value = ''
   try {
-    await heapsApi.merge({
-      targetHeapId: mergeForm.targetHeapId,
-      sourceHeapIds: mergeForm.sourceHeapIds
+    await pilesApi.merge({
+      targetPileId: mergeForm.targetPileId,
+      sourcePileIds: mergeForm.sourcePileIds
     })
     mergeMode.value = false
-    mergeForm.sourceHeapIds = []
-    mergeForm.targetHeapId = ''
+    mergeForm.sourcePileIds = []
+    mergeForm.targetPileId = ''
     await load()
   } catch (e) {
     error.value = errMsg(e)
@@ -134,7 +134,7 @@ async function submitTransfer() {
   saving.value = true
   error.value = ''
   try {
-    await heapsApi.transfer(transferTarget.value.id, { toWarehouseId: transferForm.toWarehouseId })
+    await pilesApi.transfer(transferTarget.value.id, { toWarehouseId: transferForm.toWarehouseId })
     transferTarget.value = null
     await load()
   } catch (e) {
@@ -150,10 +150,10 @@ onMounted(load)
 <template>
   <div>
     <div class="toolbar">
-      <h1>Кучи угля</h1>
+      <h1>Штабели угля</h1>
       <div>
         <button class="secondary" @click="mergeMode = true">Объединить</button>
-        <button @click="showCreate = true">Новая куча +</button>
+        <button @click="showCreate = true">Новый штабель +</button>
       </div>
     </div>
     <p v-if="error" class="error">{{ error }}</p>
@@ -162,7 +162,7 @@ onMounted(load)
     <table>
       <thead>
         <tr>
-          <th>Номер кучи</th>
+          <th>Номер штабеля</th>
           <th>Объем, т</th>
           <th>Место хранения</th>
           <th>Статус</th>
@@ -174,10 +174,10 @@ onMounted(load)
       </thead>
       <tbody>
         <tr v-for="h in rows" :key="h.id">
-          <td>{{ h.heapNumber }}</td>
+          <td>{{ h.pileNumber }}</td>
           <td>{{ fmt(h.volume) }}</td>
           <td>{{ h.warehouseNumber || '—' }}</td>
-          <td>{{ heapStatusLabels[h.status] }}</td>
+          <td>{{ pileStatusLabels[h.status] }}</td>
           <td>{{ fmtDate(h.createdAt) }}</td>
           <td>
             {{ h.originSource || '—' }}
@@ -190,18 +190,18 @@ onMounted(load)
           </td>
         </tr>
         <tr v-if="!rows.length">
-          <td colspan="8" class="muted">Куч пока нет</td>
+          <td colspan="8" class="muted">Штабелей пока нет</td>
         </tr>
       </tbody>
     </table>
     </div>
     </section>
 
-    <Modal v-if="showCreate" title="Новая куча" @close="showCreate = false">
+    <Modal v-if="showCreate" title="Новый штабель" @close="showCreate = false">
       <div class="form-grid">
         <label>
-          Номер кучи
-          <input v-model="createForm.heapNumber" />
+          Номер штабеля
+          <input v-model="createForm.pileNumber" />
         </label>
         <label>
           Объем, т
@@ -219,7 +219,7 @@ onMounted(load)
           <input v-model="createForm.originSource" />
         </label>
         <label class="full">
-          Партии в куче
+          Партии в штабеле
           <select v-model="createForm.batchIds" multiple size="5">
             <option v-for="b in batches" :key="b.id" :value="b.id">{{ b.batchNumber }}</option>
           </select>
@@ -233,7 +233,7 @@ onMounted(load)
 
     <Modal
       v-if="splitTarget"
-      :title="`Разделить кучу ${splitTarget.heapNumber}`"
+      :title="`Разделить штабель ${splitTarget.pileNumber}`"
       @close="splitTarget = null"
     >
       <div class="form-grid">
@@ -256,26 +256,26 @@ onMounted(load)
           Разделить и отправить в переработку
         </label>
       </div>
-      <p class="muted">При разделении кучи автоматически создается новая партия.</p>
+      <p class="muted">При разделении штабеля автоматически создается новая партия.</p>
       <div class="actions">
         <button class="secondary" @click="splitTarget = null">Отмена</button>
         <button :disabled="saving" @click="submitSplit">Разделить</button>
       </div>
     </Modal>
 
-    <Modal v-if="mergeMode" title="Объединить кучи" @close="mergeMode = false">
+    <Modal v-if="mergeMode" title="Объединить штабели" @close="mergeMode = false">
       <div class="form-grid">
         <label class="full">
-          Целевая куча
-          <select v-model="mergeForm.targetHeapId">
-            <option value="" disabled>Выберите кучу</option>
-            <option v-for="h in rows" :key="h.id" :value="h.id">{{ h.heapNumber }}</option>
+          Целевой штабель
+          <select v-model="mergeForm.targetPileId">
+            <option value="" disabled>Выберите штабель</option>
+            <option v-for="h in rows" :key="h.id" :value="h.id">{{ h.pileNumber }}</option>
           </select>
         </label>
         <label class="full">
-          Кучи-источники
-          <select v-model="mergeForm.sourceHeapIds" multiple size="6">
-            <option v-for="h in rows" :key="h.id" :value="h.id">{{ h.heapNumber }}</option>
+          Штабели-источники
+          <select v-model="mergeForm.sourcePileIds" multiple size="6">
+            <option v-for="h in rows" :key="h.id" :value="h.id">{{ h.pileNumber }}</option>
           </select>
         </label>
       </div>
@@ -287,7 +287,7 @@ onMounted(load)
 
     <Modal
       v-if="transferTarget"
-      :title="`Трансфер кучи ${transferTarget.heapNumber}`"
+      :title="`Трансфер штабеля ${transferTarget.pileNumber}`"
       @close="transferTarget = null"
     >
       <div class="form-grid">
@@ -306,7 +306,7 @@ onMounted(load)
 
     <Modal
       v-if="historyTarget"
-      :title="`История кучи ${historyTarget.heapNumber}`"
+      :title="`История штабеля ${historyTarget.pileNumber}`"
       @close="historyTarget = null"
     >
       <div class="overflow-x-auto">

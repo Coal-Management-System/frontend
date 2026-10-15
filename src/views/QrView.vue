@@ -1,26 +1,26 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { batchesApi, heapsApi, qrImageUrl } from "@/api/coal";
-import type { BatchDto, HeapDto } from "@/api/types";
+import { batchesApi, pilesApi, qrImageUrl } from "@/api/coal";
+import type { BatchDto, PileDto } from "@/api/types";
 import { errMsg } from "@/lib/format";
 
-const type = ref<"batch" | "heap">("batch");
+const type = ref<"batch" | "pile">("batch");
 const batches = ref<BatchDto[]>([]);
-const heaps = ref<HeapDto[]>([]);
+const piles = ref<PileDto[]>([]);
 const selected = ref("");
 const error = ref("");
 
 const options = computed(() =>
   type.value === "batch"
     ? batches.value.map((b) => ({ id: b.id, label: b.batchNumber }))
-    : heaps.value.map((h) => ({ id: h.id, label: h.heapNumber })),
+    : piles.value.map((h) => ({ id: h.id, label: h.pileNumber })),
 );
 
 onMounted(async () => {
   try {
-    [batches.value, heaps.value] = await Promise.all([
+    [batches.value, piles.value] = await Promise.all([
       batchesApi.list(),
-      heapsApi.list(),
+      pilesApi.list(),
     ]);
   } catch (e) {
     error.value = errMsg(e);
@@ -37,7 +37,7 @@ onMounted(async () => {
         Тип объекта
         <select v-model="type" @change="selected = ''">
           <option value="batch">Партия</option>
-          <option value="heap">Куча</option>
+          <option value="pile">Штабель</option>
         </select>
       </label>
       <label>

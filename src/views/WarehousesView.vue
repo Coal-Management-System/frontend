@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { heapsApi, warehousesApi } from '@/api/coal'
-import type { HeapDto, WarehouseCreateRequest, WarehouseDto } from '@/api/types'
-import { errMsg, fmt, fmtDate, heapStatusLabels, warehouseStatusLabels } from '@/lib/format'
+import { pilesApi, warehousesApi } from '@/api/coal'
+import type { PileDto, WarehouseCreateRequest, WarehouseDto } from '@/api/types'
+import { errMsg, fmt, fmtDate, pileStatusLabels, warehouseStatusLabels } from '@/lib/format'
 import Modal from '@/components/Modal.vue'
 
 const rows = ref<WarehouseDto[]>([])
-const heapsByWarehouse = ref<Record<string, HeapDto[]>>({})
+const pilesByWarehouse = ref<Record<string, PileDto[]>>({})
 const open = ref<Record<string, boolean>>({})
 const error = ref('')
 const showCreate = ref(false)
@@ -23,10 +23,10 @@ async function load() {
   }
 }
 
-async function toggleHeaps(w: WarehouseDto) {
+async function togglePiles(w: WarehouseDto) {
   open.value[w.id] = !open.value[w.id]
-  if (open.value[w.id] && !heapsByWarehouse.value[w.id]) {
-    heapsByWarehouse.value[w.id] = await warehousesApi.heaps(w.id)
+  if (open.value[w.id] && !pilesByWarehouse.value[w.id]) {
+    pilesByWarehouse.value[w.id] = await warehousesApi.piles(w.id)
   }
 }
 
@@ -65,7 +65,7 @@ onMounted(load)
           <th>Место положения</th>
           <th>Статус</th>
           <th>Дата</th>
-          <th>Кучи</th>
+          <th>Штабели</th>
         </tr>
       </thead>
       <tbody>
@@ -76,34 +76,34 @@ onMounted(load)
             <td>{{ warehouseStatusLabels[w.status] }}</td>
             <td>{{ fmtDate(w.createdAt) }}</td>
             <td>
-              <button class="secondary" @click="toggleHeaps(w)">
-                {{ open[w.id] ? 'Скрыть кучи' : 'Показать кучи' }} ({{ w.heapCount }})
+              <button class="secondary" @click="togglePiles(w)">
+                {{ open[w.id] ? 'Скрыть штабели' : 'Показать штабели' }} ({{ w.pileCount }})
               </button>
             </td>
           </tr>
           <tr v-if="open[w.id]">
             <td colspan="5">
-              <div v-if="heapsByWarehouse[w.id]?.length" class="overflow-x-auto">
+              <div v-if="pilesByWarehouse[w.id]?.length" class="overflow-x-auto">
               <table>
                 <thead>
                   <tr>
-                    <th>Номер кучи</th>
+                    <th>Номер штабеля</th>
                     <th>Объем, т</th>
                     <th>Статус</th>
                     <th>Партии</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="h in heapsByWarehouse[w.id]" :key="h.id">
-                    <td>{{ h.heapNumber }}</td>
+                  <tr v-for="h in pilesByWarehouse[w.id]" :key="h.id">
+                    <td>{{ h.pileNumber }}</td>
                     <td>{{ fmt(h.volume) }}</td>
-                    <td>{{ heapStatusLabels[h.status] }}</td>
+                    <td>{{ pileStatusLabels[h.status] }}</td>
                     <td>{{ h.batchNumbers.join(', ') || '—' }}</td>
                   </tr>
                 </tbody>
               </table>
               </div>
-              <span v-else class="muted">Куч на складе нет</span>
+              <span v-else class="muted">Штабелей на складе нет</span>
             </td>
           </tr>
         </template>

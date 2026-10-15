@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { batchesApi, heapsApi, qrImageUrl } from '@/api/coal'
-import type { BatchDto, HeapDto } from '@/api/types'
-import { batchStatusLabels, errMsg, fmt, fmtDate, heapStatusLabels } from '@/lib/format'
+import { batchesApi, pilesApi, qrImageUrl } from '@/api/coal'
+import type { BatchDto, PileDto } from '@/api/types'
+import { batchStatusLabels, errMsg, fmt, fmtDate, pileStatusLabels } from '@/lib/format'
 
 const route = useRoute()
-const type = route.params.type as 'batch' | 'heap' | 'movement'
+const type = route.params.type as 'batch' | 'pile' | 'movement'
 const id = route.params.id as string
 
 const batch = ref<BatchDto | null>(null)
-const heap = ref<HeapDto | null>(null)
+const pile = ref<PileDto | null>(null)
 const error = ref('')
 
 onMounted(async () => {
   try {
     if (type === 'batch') batch.value = await batchesApi.get(id)
-    else if (type === 'heap') heap.value = await heapsApi.get(id)
+    else if (type === 'pile') pile.value = await pilesApi.get(id)
   } catch (e) {
     error.value = errMsg(e)
   }
@@ -43,17 +43,17 @@ onMounted(async () => {
         <dt>Создана</dt>
         <dd>{{ fmtDate(batch.createdAt) }}</dd>
       </dl>
-      <dl v-else-if="heap" class="kv" style="margin-top: 1rem">
-        <dt>Куча</dt>
-        <dd>{{ heap.heapNumber }}</dd>
+      <dl v-else-if="pile" class="kv" style="margin-top: 1rem">
+        <dt>Штабель</dt>
+        <dd>{{ pile.pileNumber }}</dd>
         <dt>Статус</dt>
-        <dd>{{ heapStatusLabels[heap.status] }}</dd>
+        <dd>{{ pileStatusLabels[pile.status] }}</dd>
         <dt>Объем, т</dt>
-        <dd>{{ fmt(heap.volume) }}</dd>
+        <dd>{{ fmt(pile.volume) }}</dd>
         <dt>Склад</dt>
-        <dd>{{ heap.warehouseNumber || '—' }}</dd>
+        <dd>{{ pile.warehouseNumber || '—' }}</dd>
         <dt>Партии</dt>
-        <dd>{{ heap.batchNumbers.join(', ') || '—' }}</dd>
+        <dd>{{ pile.batchNumbers.join(', ') || '—' }}</dd>
       </dl>
       <p v-else class="muted">Движение {{ id }}</p>
     </template>
