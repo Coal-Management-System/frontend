@@ -17,6 +17,7 @@ const warehouses = ref<WarehouseDto[]>([]);
 const batches = ref<BatchDto[]>([]);
 const error = ref("");
 const saving = ref(false);
+const PILE_PREFIX = "Шт-";
 
 const showCreate = ref(false);
 const splitTarget = ref<PileDto | null>(null);
@@ -75,11 +76,16 @@ async function openHistory(h: PileDto) {
 }
 
 async function submitCreate() {
-  saving.value = true;
   error.value = "";
+  const number = createForm.pileNumber.trim();
+  if (!number) {
+    error.value = "Укажите номер штабеля";
+    return;
+  }
+  saving.value = true;
   try {
     await pilesApi.create({
-      pileNumber: createForm.pileNumber,
+      pileNumber: `${PILE_PREFIX}${number}`,
       volume: createForm.volume ?? 0,
       warehouseId: createForm.warehouseId || null,
       originSource: createForm.originSource || undefined,
@@ -216,7 +222,17 @@ onMounted(load);
       <div class="form-grid">
         <label>
           Номер штабеля
-          <input v-model="createForm.pileNumber" />
+          <div class="flex items-stretch">
+            <span
+              class="flex items-center rounded-l-[10px] border border-r-0 border-line px-3 text-mute select-none"
+            >
+              {{ PILE_PREFIX }}
+            </span>
+            <input
+              v-model="createForm.pileNumber"
+              class="!rounded-l-none flex-1 min-w-0"
+            />
+          </div>
         </label>
         <label>
           Объем, т
