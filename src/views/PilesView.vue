@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import { batchesApi, pilesApi, warehousesApi } from "@/api/coal";
-import type { BatchDto, PileDto, MovementDto, WarehouseDto } from "@/api/types";
+import type { MovementDto, OptionDto, PileDto } from "@/api/types";
 import {
   errMsg,
   fmt,
@@ -11,11 +11,27 @@ import {
 } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
+import Pagination from "@/components/Pagination.vue";
+import { usePagedList } from "@/composables/usePagedList";
 
-const rows = ref<PileDto[]>([]);
-const warehouses = ref<WarehouseDto[]>([]);
-const batches = ref<BatchDto[]>([]);
-const error = ref("");
+const {
+  rows,
+  loading,
+  error,
+  page,
+  size,
+  totalElements,
+  totalPages,
+  load,
+  prev,
+  next,
+  setSize,
+} = usePagedList<PileDto>(pilesApi.list);
+
+// Dropdowns read the unpaged /options endpoints, otherwise they would truncate at 10 rows.
+const warehouseOptions = ref<OptionDto[]>([]);
+const batchOptions = ref<OptionDto[]>([]);
+const pileOptions = ref<OptionDto[]>([]);
 const saving = ref(false);
 const PILE_PREFIX = "Шт-";
 
@@ -44,14 +60,14 @@ const splitForm = reactive({
 const mergeForm = reactive({ targetPileId: "", sourcePileIds: [] as string[] });
 const transferForm = reactive({ toWarehouseId: "" });
 
-async function load() {
-  error.value = "";
+async function loadOptions() {
   try {
-    [rows.value, warehouses.value, batches.value] = await Promise.all([
-      pilesApi.list(),
-      warehousesApi.list(),
-      batchesApi.list(),
-    ]);
+    [warehouseOptions.value, batchOptions.value, pileOptions.value] =
+      await Promise.all([
+        warehousesApi.options(),
+        batchesApi.options(),
+        pilesApi.options(),
+      ]);
   } catch (e) {
     error.value = errMsg(e);
   }
@@ -95,7 +111,7 @@ async function submitCreate() {
     createForm.pileNumber = "";
     createForm.volume = null;
     createForm.batchIds = [];
-    await load();
+    await Promise.all([load(), loadOptions()]);
   } catch (e) {
     error.value = errMsg(e);
   } finally {
@@ -115,7 +131,7 @@ async function submitSplit() {
       sendImmediately: splitForm.sendImmediately,
     });
     splitTarget.value = null;
-    await load();
+    await Promise.all([load(), loadOptions()]);
   } catch (e) {
     error.value = errMsg(e);
   } finally {
@@ -134,7 +150,7 @@ async function submitMerge() {
     mergeMode.value = false;
     mergeForm.sourcePileIds = [];
     mergeForm.targetPileId = "";
-    await load();
+    await Promise.all([load(), loadOptions()]);
   } catch (e) {
     error.value = errMsg(e);
   } finally {
@@ -159,7 +175,10 @@ async function submitTransfer() {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  void load();
+  void loadOptions();
+});
 </script>
 
 <template>
@@ -216,6 +235,16 @@ onMounted(load);
           </tbody>
         </table>
       </div>
+      <Pagination
+        :page="page"
+        :size="size"
+        :total-pages="totalPages"
+        :total-elements="totalElements"
+        :loading="loading"
+        @prev="prev"
+        @next="next"
+        @update:size="setSize"
+      />
     </section>
 
     <Modal v-if="showCreate" title="Новый штабель" @close="showCreate = false">
@@ -242,8 +271,8 @@ onMounted(load);
           Место хранения (склад)
           <select v-model="createForm.warehouseId">
             <option value="">Без склада</option>
-            <option v-for="w in warehouses" :key="w.id" :value="w.id">
-              {{ w.number }}
+            <option v-for="o in warehouseOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>
@@ -254,8 +283,8 @@ onMounted(load);
         <label class="full">
           Партии в штабеле
           <select v-model="createForm.batchIds" multiple size="5">
-            <option v-for="b in batches" :key="b.id" :value="b.id">
-              {{ b.batchNumber }}
+            <option v-for="o in batchOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>
@@ -279,8 +308,8 @@ onMounted(load);
         <label>
           Куда (склад)
           <select v-model="splitForm.toWarehouseId">
-            <option v-for="w in warehouses" :key="w.id" :value="w.id">
-              {{ w.number }}
+            <option v-for="o in warehouseOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>
@@ -312,16 +341,16 @@ onMounted(load);
           Целевой штабель
           <select v-model="mergeForm.targetPileId">
             <option value="" disabled>Выберите штабель</option>
-            <option v-for="h in rows" :key="h.id" :value="h.id">
-              {{ h.pileNumber }}
+            <option v-for="o in pileOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>
         <label class="full">
           Штабели-источники
           <select v-model="mergeForm.sourcePileIds" multiple size="6">
-            <option v-for="h in rows" :key="h.id" :value="h.id">
-              {{ h.pileNumber }}
+            <option v-for="o in pileOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>
@@ -341,8 +370,8 @@ onMounted(load);
         <label class="full">
           Куда (склад)
           <select v-model="transferForm.toWarehouseId">
-            <option v-for="w in warehouses" :key="w.id" :value="w.id">
-              {{ w.number }}
+            <option v-for="o in warehouseOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>

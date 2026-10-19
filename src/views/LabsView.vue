@@ -1,21 +1,57 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { batchesApi, labsApi } from "@/api/coal";
 import type {
   AnalysisCreateRequest,
   AnalysisDto,
-  BatchDto,
   Indicator,
   LabDto,
+  OptionDto,
 } from "@/api/types";
 import { errMsg, fmtDate, indicatorLabels, stageLabels } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
+import Pagination from "@/components/Pagination.vue";
+import { usePagedList } from "@/composables/usePagedList";
 
-const labs = ref<LabDto[]>([]);
-const analyses = ref<AnalysisDto[]>([]);
-const batches = ref<BatchDto[]>([]);
-const error = ref("");
+// Two lists on one page: the prefixes keep their route-query keys apart.
+const {
+  rows: labs,
+  loading: labsLoading,
+  error: labsError,
+  page: labsPage,
+  size: labsSize,
+  totalElements: labsTotal,
+  totalPages: labsPages,
+  load: loadLabs,
+  prev: labsPrev,
+  next: labsNext,
+  setSize: setLabsSize,
+} = usePagedList<LabDto>(labsApi.labs, { prefix: "labs" });
+
+const {
+  rows: analyses,
+  loading: analysesLoading,
+  error: analysesError,
+  page: analysesPage,
+  size: analysesSize,
+  totalElements: analysesTotal,
+  totalPages: analysesPages,
+  load: loadAnalyses,
+  first: analysesFirst,
+  prev: analysesPrev,
+  next: analysesNext,
+  setSize: setAnalysesSize,
+} = usePagedList<AnalysisDto>(labsApi.analyses, { prefix: "an" });
+
+// Dropdowns read the unpaged /options endpoints, otherwise they would truncate at 10 rows.
+const batchOptions = ref<OptionDto[]>([]);
+const labOptions = ref<OptionDto[]>([]);
+
+const formError = ref("");
+const error = computed(
+  () => formError.value || labsError.value || analysesError.value,
+);
 const showLab = ref(false);
 const showAnalysis = ref(false);
 const saving = ref(false);
@@ -42,16 +78,14 @@ const form = reactive({
   values: [] as ValueRow[],
 });
 
-async function load() {
-  error.value = "";
+async function loadOptions() {
   try {
-    [labs.value, analyses.value, batches.value] = await Promise.all([
-      labsApi.labs(),
-      labsApi.analyses(),
-      batchesApi.list(),
+    [batchOptions.value, labOptions.value] = await Promise.all([
+      batchesApi.options(),
+      labsApi.options(),
     ]);
   } catch (e) {
-    error.value = errMsg(e);
+    formError.value = errMsg(e);
   }
 }
 
@@ -61,24 +95,24 @@ function addRow() {
 
 async function submitLab() {
   saving.value = true;
-  error.value = "";
+  formError.value = "";
   try {
     await labsApi.createLab(labName.value);
     labName.value = "";
     showLab.value = false;
-    await load();
+    await Promise.all([loadLabs(), loadOptions()]);
   } catch (e) {
-    error.value = errMsg(e);
+    formError.value = errMsg(e);
   } finally {
     saving.value = false;
   }
 }
 
 async function submitAnalysis() {
-  error.value = "";
+  formError.value = "";
   const sample = form.sampleNumber.trim();
   if (!sample) {
-    error.value = "Укажите номер пробы";
+    formError.value = "Укажите номер пробы";
     return;
   }
   saving.value = true;
@@ -104,15 +138,19 @@ async function submitAnalysis() {
     showAnalysis.value = false;
     form.sampleNumber = "";
     form.values = [];
-    await load();
+    await analysesFirst();
   } catch (e) {
-    error.value = errMsg(e);
+    formError.value = errMsg(e);
   } finally {
     saving.value = false;
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  void loadLabs();
+  void loadAnalyses();
+  void loadOptions();
+});
 </script>
 
 <template>
@@ -147,6 +185,16 @@ onMounted(load);
           </tbody>
         </table>
       </div>
+      <Pagination
+        :page="labsPage"
+        :size="labsSize"
+        :total-pages="labsPages"
+        :total-elements="labsTotal"
+        :loading="labsLoading"
+        @prev="labsPrev"
+        @next="labsNext"
+        @update:size="setLabsSize"
+      />
     </section>
 
     <section class="panel mt-10">
@@ -181,6 +229,16 @@ onMounted(load);
           </tbody>
         </table>
       </div>
+      <Pagination
+        :page="analysesPage"
+        :size="analysesSize"
+        :total-pages="analysesPages"
+        :total-elements="analysesTotal"
+        :loading="analysesLoading"
+        @prev="analysesPrev"
+        @next="analysesNext"
+        @update:size="setAnalysesSize"
+      />
     </section>
 
     <Modal v-if="showLab" title="Новая лаборатория" @close="showLab = false">
@@ -220,8 +278,8 @@ onMounted(load);
           Номер партии
           <select v-model="form.batchId">
             <option value="" disabled>Выберите партию</option>
-            <option v-for="b in batches" :key="b.id" :value="b.id">
-              {{ b.batchNumber }}
+            <option v-for="o in batchOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>
@@ -229,8 +287,8 @@ onMounted(load);
           Лаборатория
           <select v-model="form.labId">
             <option value="" disabled>Выберите лабораторию</option>
-            <option v-for="l in labs" :key="l.id" :value="l.id">
-              {{ l.name }}
+            <option v-for="o in labOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { batchesApi, labsApi, qrImageUrl } from "@/api/coal";
+import { batchesApi, qrImageUrl } from "@/api/coal";
 import type {
   AnalysisDto,
   BatchDto,
@@ -111,7 +111,7 @@ onMounted(async () => {
     batch.value = await batchesApi.get(id);
     fillForm(batch.value);
     history.value = await batchesApi.qualityHistory(id);
-    analyses.value = await labsApi.analyses(id);
+    analyses.value = await batchesApi.analyses(id);
   } catch (e) {
     error.value = errMsg(e);
   }

@@ -1,20 +1,29 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import { batchesApi, pilesApi, movementsApi, qrImageUrl } from "@/api/coal";
-import type {
-  BatchDto,
-  PileDto,
-  MovementCreateRequest,
-  MovementDto,
-} from "@/api/types";
+import type { MovementCreateRequest, MovementDto, OptionDto } from "@/api/types";
 import { errMsg, fmt, fmtDate, operationLabels } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
+import Pagination from "@/components/Pagination.vue";
+import { usePagedList } from "@/composables/usePagedList";
 
-const rows = ref<MovementDto[]>([]);
-const batches = ref<BatchDto[]>([]);
-const piles = ref<PileDto[]>([]);
-const error = ref("");
+const {
+  rows,
+  loading,
+  error,
+  page,
+  size,
+  totalElements,
+  totalPages,
+  load,
+  first,
+  prev,
+  next,
+  setSize,
+} = usePagedList<MovementDto>(movementsApi.list);
+const batchOptions = ref<OptionDto[]>([]);
+const pileOptions = ref<OptionDto[]>([]);
 const showCreate = ref(false);
 const saving = ref(false);
 const qrTarget = ref<MovementDto | null>(null);
@@ -35,13 +44,11 @@ const form = reactive<
   originSource: "",
 });
 
-async function load() {
-  error.value = "";
+async function loadOptions() {
   try {
-    [rows.value, batches.value, piles.value] = await Promise.all([
-      movementsApi.list(),
-      batchesApi.list(),
-      pilesApi.list(),
+    [batchOptions.value, pileOptions.value] = await Promise.all([
+      batchesApi.options(),
+      pilesApi.options(),
     ]);
   } catch (e) {
     error.value = errMsg(e);
@@ -62,7 +69,7 @@ async function submit() {
       originSource: form.originSource || undefined,
     });
     showCreate.value = false;
-    await load();
+    await first();
   } catch (e) {
     error.value = errMsg(e);
   } finally {
@@ -70,7 +77,10 @@ async function submit() {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  void load();
+  void loadOptions();
+});
 </script>
 
 <template>
@@ -116,6 +126,16 @@ onMounted(load);
           </tbody>
         </table>
       </div>
+      <Pagination
+        :page="page"
+        :size="size"
+        :total-pages="totalPages"
+        :total-elements="totalElements"
+        :loading="loading"
+        @prev="prev"
+        @next="next"
+        @update:size="setSize"
+      />
     </section>
 
     <Modal
@@ -153,8 +173,8 @@ onMounted(load);
           Партия
           <select v-model="form.batchId">
             <option value="">Не указана</option>
-            <option v-for="b in batches" :key="b.id" :value="b.id">
-              {{ b.batchNumber }}
+            <option v-for="o in batchOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>
@@ -162,8 +182,8 @@ onMounted(load);
           Штабель
           <select v-model="form.pileId">
             <option value="">Не указана</option>
-            <option v-for="h in piles" :key="h.id" :value="h.id">
-              {{ h.pileNumber }}
+            <option v-for="o in pileOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>

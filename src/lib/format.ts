@@ -92,6 +92,15 @@ export function fmtDate(value: string | null | undefined): string {
   })
 }
 
+export function pluralRu(n: number, forms: [string, string, string]): string {
+  const abs = Math.abs(n) % 100
+  const tail = abs % 10
+  if (abs > 10 && abs < 20) return forms[2]
+  if (tail === 1) return forms[0]
+  if (tail > 1 && tail < 5) return forms[1]
+  return forms[2]
+}
+
 export function errMsg(e: unknown): string {
   const anyE = e as { response?: { data?: { message?: string } }; message?: string }
   const raw = anyE?.response?.data?.message || anyE?.message || 'Ошибка запроса'

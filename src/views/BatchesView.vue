@@ -12,9 +12,22 @@ import {
 } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
+import Pagination from "@/components/Pagination.vue";
+import { usePagedList } from "@/composables/usePagedList";
 
-const rows = ref<BatchDto[]>([]);
-const error = ref("");
+const {
+  rows,
+  loading,
+  error,
+  page,
+  size,
+  totalElements,
+  totalPages,
+  load,
+  prev,
+  next,
+  setSize,
+} = usePagedList<BatchDto>(batchesApi.list);
 const showCreate = ref(false);
 const saving = ref(false);
 const BATCH_PREFIX = "П-";
@@ -38,15 +51,6 @@ const form = reactive<
   minedAtLocal: "",
   initialWeight: null,
 });
-
-async function load() {
-  error.value = "";
-  try {
-    rows.value = await batchesApi.list();
-  } catch (e) {
-    error.value = errMsg(e);
-  }
-}
 
 function originOf(b: BatchDto): string {
   return b.originType === "PURCHASED"
@@ -159,6 +163,16 @@ onMounted(load);
           </tbody>
         </table>
       </div>
+      <Pagination
+        :page="page"
+        :size="size"
+        :total-pages="totalPages"
+        :total-elements="totalElements"
+        :loading="loading"
+        @prev="prev"
+        @next="next"
+        @update:size="setSize"
+      />
     </section>
 
     <Modal

@@ -15,6 +15,24 @@ export type Indicator =
   | 'GRANULOMETRIC'
   | 'OTHER'
 
+export interface PageQuery {
+  page?: number
+  size?: number
+}
+
+export interface Page<T> {
+  content: T[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
+export interface OptionDto {
+  id: string
+  label: string
+}
+
 export interface BatchDto {
   id: string
   batchNumber: string

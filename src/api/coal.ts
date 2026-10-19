@@ -6,21 +6,26 @@ import type {
   BatchDto,
   BatchUpdateRequest,
   DashboardDto,
+  LabDto,
+  MovementCreateRequest,
+  MovementDto,
+  OptionDto,
+  Page,
+  PageQuery,
   PileCreateRequest,
   PileDto,
   PileMergeRequest,
   PileSplitRequest,
   PileTransferRequest,
-  LabDto,
-  MovementCreateRequest,
-  MovementDto,
   QualityHistoryRow,
   WarehouseCreateRequest,
   WarehouseDto
 } from './types'
 
 export const batchesApi = {
-  list: () => http.get<BatchDto[]>('/batches').then(r => r.data),
+  list: (query: PageQuery = {}) =>
+    http.get<Page<BatchDto>>('/batches', { params: query }).then(r => r.data),
+  options: () => http.get<OptionDto[]>('/batches/options').then(r => r.data),
   get: (id: string) => http.get<BatchDto>(`/batches/${id}`).then(r => r.data),
   create: (req: BatchCreateRequest) => http.post<BatchDto>('/batches', req).then(r => r.data),
   update: (id: string, req: BatchUpdateRequest) =>
@@ -33,11 +38,14 @@ export const batchesApi = {
       })
       .then(() => undefined),
   qualityHistory: (id: string) =>
-    http.get<QualityHistoryRow[]>(`/batches/${id}/quality-history`).then(r => r.data)
+    http.get<QualityHistoryRow[]>(`/batches/${id}/quality-history`).then(r => r.data),
+  analyses: (id: string) => http.get<AnalysisDto[]>(`/batches/${id}/analyses`).then(r => r.data)
 }
 
 export const pilesApi = {
-  list: () => http.get<PileDto[]>('/piles').then(r => r.data),
+  list: (query: PageQuery = {}) =>
+    http.get<Page<PileDto>>('/piles', { params: query }).then(r => r.data),
+  options: () => http.get<OptionDto[]>('/piles/options').then(r => r.data),
   get: (id: string) => http.get<PileDto>(`/piles/${id}`).then(r => r.data),
   create: (req: PileCreateRequest) => http.post<PileDto>('/piles', req).then(r => r.data),
   history: (id: string) => http.get<MovementDto[]>(`/piles/${id}/history`).then(r => r.data),
@@ -49,23 +57,26 @@ export const pilesApi = {
 }
 
 export const movementsApi = {
-  list: () => http.get<MovementDto[]>('/movements').then(r => r.data),
+  list: (query: PageQuery = {}) =>
+    http.get<Page<MovementDto>>('/movements', { params: query }).then(r => r.data),
   create: (req: MovementCreateRequest) => http.post<MovementDto>('/movements', req).then(r => r.data)
 }
 
 export const labsApi = {
-  labs: () => http.get<LabDto[]>('/labs').then(r => r.data),
+  labs: (query: PageQuery = {}) =>
+    http.get<Page<LabDto>>('/labs', { params: query }).then(r => r.data),
+  options: () => http.get<OptionDto[]>('/labs/options').then(r => r.data),
   createLab: (name: string) => http.post<LabDto>('/labs', { name }).then(r => r.data),
-  analyses: (batchId?: string) =>
-    http
-      .get<AnalysisDto[]>('/lab-analyses', { params: batchId ? { batchId } : {} })
-      .then(r => r.data),
+  analyses: (query: PageQuery = {}) =>
+    http.get<Page<AnalysisDto>>('/lab-analyses', { params: query }).then(r => r.data),
   createAnalysis: (req: AnalysisCreateRequest) =>
     http.post<AnalysisDto>('/lab-analyses', req).then(r => r.data)
 }
 
 export const warehousesApi = {
-  list: () => http.get<WarehouseDto[]>('/warehouses').then(r => r.data),
+  list: (query: PageQuery = {}) =>
+    http.get<Page<WarehouseDto>>('/warehouses', { params: query }).then(r => r.data),
+  options: () => http.get<OptionDto[]>('/warehouses/options').then(r => r.data),
   create: (req: WarehouseCreateRequest) => http.post<WarehouseDto>('/warehouses', req).then(r => r.data),
   piles: (id: string) => http.get<PileDto[]>(`/warehouses/${id}/piles`).then(r => r.data)
 }

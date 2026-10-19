@@ -1,28 +1,38 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { pilesApi, warehousesApi } from '@/api/coal'
+import { onMounted, reactive, ref, watch } from 'vue'
+import { warehousesApi } from '@/api/coal'
 import type { PileDto, WarehouseCreateRequest, WarehouseDto } from '@/api/types'
 import { errMsg, fmt, fmtDate, pileStatusLabels, warehouseStatusLabels } from '@/lib/format'
 import Modal from '@/components/Modal.vue'
+import Pagination from '@/components/Pagination.vue'
+import { usePagedList } from '@/composables/usePagedList'
 
-const rows = ref<WarehouseDto[]>([])
+const {
+  rows,
+  loading,
+  error,
+  page,
+  size,
+  totalElements,
+  totalPages,
+  load,
+  prev,
+  next,
+  setSize
+} = usePagedList<WarehouseDto>(warehousesApi.list)
+
 const pilesByWarehouse = ref<Record<string, PileDto[]>>({})
 const open = ref<Record<string, boolean>>({})
-const error = ref('')
 const showCreate = ref(false)
 const saving = ref(false)
 const WAREHOUSE_PREFIX = 'Ск-'
 
 const form = reactive<WarehouseCreateRequest>({ number: '', location: '', status: 'ACTIVE' })
 
-async function load() {
-  error.value = ''
-  try {
-    rows.value = await warehousesApi.list()
-  } catch (e) {
-    error.value = errMsg(e)
-  }
-}
+watch(page, () => {
+  open.value = {}
+  pilesByWarehouse.value = {}
+})
 
 async function togglePiles(w: WarehouseDto) {
   open.value[w.id] = !open.value[w.id]
@@ -119,6 +129,16 @@ onMounted(load)
       </tbody>
     </table>
     </div>
+    <Pagination
+      :page="page"
+      :size="size"
+      :total-pages="totalPages"
+      :total-elements="totalElements"
+      :loading="loading"
+      @prev="prev"
+      @next="next"
+      @update:size="setSize"
+    />
     </section>
 
     <Modal v-if="showCreate" title="Новый склад" @close="showCreate = false">

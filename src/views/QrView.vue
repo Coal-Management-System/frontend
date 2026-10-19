@@ -1,26 +1,24 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { batchesApi, pilesApi, qrImageUrl } from "@/api/coal";
-import type { BatchDto, PileDto } from "@/api/types";
+import type { OptionDto } from "@/api/types";
 import { errMsg } from "@/lib/format";
 
 const type = ref<"batch" | "pile">("batch");
-const batches = ref<BatchDto[]>([]);
-const piles = ref<PileDto[]>([]);
+const batchOptions = ref<OptionDto[]>([]);
+const pileOptions = ref<OptionDto[]>([]);
 const selected = ref("");
 const error = ref("");
 
 const options = computed(() =>
-  type.value === "batch"
-    ? batches.value.map((b) => ({ id: b.id, label: b.batchNumber }))
-    : piles.value.map((h) => ({ id: h.id, label: h.pileNumber })),
+  type.value === "batch" ? batchOptions.value : pileOptions.value,
 );
 
 onMounted(async () => {
   try {
-    [batches.value, piles.value] = await Promise.all([
-      batchesApi.list(),
-      pilesApi.list(),
+    [batchOptions.value, pileOptions.value] = await Promise.all([
+      batchesApi.options(),
+      pilesApi.options(),
     ]);
   } catch (e) {
     error.value = errMsg(e);
