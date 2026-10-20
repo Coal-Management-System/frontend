@@ -494,4 +494,130 @@
       font-size: 0.78rem;
     }
   }
+
+  /* ---------- date & time picker ---------- */
+  .datepicker {
+    position: relative;
+  }
+  .datepicker-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid $line;
+    border-radius: 10px;
+    background: $field-bg;
+    color: $ink;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: left;
+
+    &.empty {
+      color: $mute-2;
+      font-weight: 400;
+    }
+    &:focus-visible {
+      outline: none;
+      border-color: rgba(34, 211, 238, 0.55);
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+    }
+    svg {
+      @include icon-strokes(16px, 1.7);
+      flex: none;
+      color: $mute;
+    }
+  }
+  .datepicker-pop {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 268px;
+    padding: 0.7rem;
+    border: 1px solid $line-strong;
+    border-radius: 12px;
+    background: linear-gradient(160deg, $modal-a, $modal-b);
+    box-shadow: $shadow-panel;
+
+    &.up {
+      top: auto;
+      bottom: calc(100% + 6px);
+    }
+  }
+  .datepicker-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+
+    span {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: $ink-soft;
+    }
+  }
+  .datepicker-week,
+  .datepicker-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .datepicker-week span {
+    padding: 0.15rem 0;
+    text-align: center;
+    font-size: 0.68rem;
+    color: $mute-2;
+  }
+  .datepicker-grid button {
+    padding: 0.3rem 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: $ink-soft;
+    font-size: 0.78rem;
+    font-weight: 500;
+    box-shadow: none;
+
+    &:hover {
+      background: $hover-wash;
+      color: $ink-bright;
+    }
+    &.today {
+      color: $neon-cyan;
+    }
+    &.selected {
+      background: linear-gradient(120deg, $neon-cyan, $neon-blue);
+      color: $btn-ink;
+      font-weight: 700;
+    }
+  }
+  .datepicker-time {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid $line;
+
+    select {
+      width: 76px;
+      padding: 0.3rem 0.4rem;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    span {
+      color: $mute;
+    }
+  }
+  .datepicker-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+  }
 }

@@ -120,9 +120,6 @@
     height: 16px;
     accent-color: $neon-cyan;
   }
-  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-    filter: invert(0.7);
-  }
 
   button,
   .btn {

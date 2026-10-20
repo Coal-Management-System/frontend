@@ -10,6 +10,7 @@ import type {
 } from "@/api/types";
 import { errMsg, fmtDate, indicatorLabels, stageLabels } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
+import DateTimePicker from "@/components/DateTimePicker.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
@@ -314,7 +315,7 @@ onMounted(() => {
         </label>
         <label>
           Дата анализа
-          <input v-model="form.analysisDateLocal" type="datetime-local" />
+          <DateTimePicker v-model="form.analysisDateLocal" />
         </label>
       </div>
 

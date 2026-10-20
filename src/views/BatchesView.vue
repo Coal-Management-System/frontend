@@ -11,6 +11,7 @@ import {
   originLabels,
 } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
+import DateTimePicker from "@/components/DateTimePicker.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
@@ -240,7 +241,7 @@ onMounted(load);
         </label>
         <label>
           Дата добычи / поступления
-          <input v-model="form.minedAtLocal" type="datetime-local" />
+          <DateTimePicker v-model="form.minedAtLocal" />
         </label>
       </div>
       <div class="actions">

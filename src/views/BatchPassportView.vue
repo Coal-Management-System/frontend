@@ -20,6 +20,7 @@ import {
   stageLabels,
 } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
+import DateTimePicker from "@/components/DateTimePicker.vue";
 import Modal from "@/components/Modal.vue";
 
 const route = useRoute();
@@ -314,7 +315,7 @@ function resetForm() {
           </label>
           <label>
             Дата добычи или поступления
-            <input v-model="form.minedAtLocal" type="datetime-local" />
+            <DateTimePicker v-model="form.minedAtLocal" />
           </label>
         </div>
         <dl class="kv mt-4">
