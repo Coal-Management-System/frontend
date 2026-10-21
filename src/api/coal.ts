@@ -14,6 +14,7 @@ import type {
   PageQuery,
   PileCreateRequest,
   PileDto,
+  PileAcceptBatchRequest,
   PileMergeRequest,
   PileSplitRequest,
   PileTransferRequest,
@@ -52,6 +53,8 @@ export const pilesApi = {
   split: (id: string, req: PileSplitRequest) =>
     http.post<PileDto>(`/piles/${id}/split`, req).then(r => r.data),
   merge: (req: PileMergeRequest) => http.post<PileDto>('/piles/merge', req).then(r => r.data),
+  acceptBatch: (id: string, req: PileAcceptBatchRequest) =>
+    http.post<PileDto>(`/piles/${id}/accept-batch`, req).then(r => r.data),
   transfer: (id: string, req: PileTransferRequest) =>
     http.post<PileDto>(`/piles/${id}/transfer`, req).then(r => r.data)
 }

@@ -338,7 +338,7 @@ onMounted(() => {
           <input v-model="v.unit" placeholder="% , ккал/кг…" />
         </label>
       </div>
-      <button class="secondary" @click="addRow">+ показатель</button>
+      <button class="secondary mt-2" @click="addRow">+ показатель</button>
 
       <div class="actions">
         <button class="secondary" @click="showAnalysis = false">Отмена</button>

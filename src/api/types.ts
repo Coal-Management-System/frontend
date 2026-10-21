@@ -1,7 +1,7 @@
 export type BatchStatus = 'NEW' | 'IN_PROCESSING' | 'READY_FOR_SHIPMENT' | 'SHIPPED'
 export type OriginType = 'OWN_MINING' | 'PURCHASED'
 export type PileStatus = 'ACTIVE' | 'SPLIT' | 'MERGED' | 'TRANSFERRED' | 'EMPTY'
-export type MovementOperation = 'PILE_CREATED' | 'PILE_MERGED' | 'PILE_SPLIT' | 'PILE_TRANSFERRED'
+export type MovementOperation = 'PILE_CREATED' | 'PILE_MERGED' | 'PILE_SPLIT' | 'PILE_TRANSFERRED' | 'BATCH_ACCEPTED_INTO_PILE'
 export type AnalysisStage = 'INITIAL' | 'AFTER_ENRICHMENT' | 'BEFORE_SHIPMENT'
 export type AnalysisStatus = 'DRAFT' | 'UPLOADED'
 export type WarehouseStatus = 'ACTIVE' | 'CLOSED'
@@ -132,6 +132,11 @@ export interface PileSplitRequest {
 export interface PileMergeRequest {
   sourcePileIds: string[]
   targetPileId: string
+}
+
+export interface PileAcceptBatchRequest {
+  batchId: string
+  volume: number
 }
 
 export interface PileTransferRequest {

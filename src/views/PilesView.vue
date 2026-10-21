@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import { batchesApi, pilesApi, warehousesApi } from "@/api/coal";
-import type { MovementDto, OptionDto, PileDto } from "@/api/types";
+import type { BatchDto, MovementDto, OptionDto, PileDto } from "@/api/types";
 import {
   errMsg,
   fmt,
@@ -59,6 +59,11 @@ const splitForm = reactive({
 
 const mergeForm = reactive({ targetPileId: "", sourcePileIds: [] as string[] });
 const transferForm = reactive({ toWarehouseId: "" });
+const acceptTarget = ref<PileDto | null>(null);
+const acceptForm = reactive({ batchId: "", volume: null as number | null });
+// The picked party, loaded on demand so the volume field can prefill its free remainder.
+const acceptBatch = ref<BatchDto | null>(null);
+const acceptBatchLoading = ref(false);
 
 async function loadOptions() {
   try {
@@ -84,6 +89,54 @@ function openSplit(h: PileDto) {
 function openTransfer(h: PileDto) {
   transferTarget.value = h;
   transferForm.toWarehouseId = h.warehouseId || "";
+}
+
+function openAccept(h: PileDto) {
+  acceptTarget.value = h;
+  acceptForm.batchId = "";
+  acceptForm.volume = null;
+  acceptBatch.value = null;
+}
+
+async function onAcceptBatchChange() {
+  acceptBatch.value = null;
+  acceptForm.volume = null;
+  if (!acceptForm.batchId) return;
+  acceptBatchLoading.value = true;
+  error.value = "";
+  try {
+    const batch = await batchesApi.get(acceptForm.batchId);
+    // Ignore a late response if the user already picked another party.
+    if (acceptForm.batchId !== batch.id) return;
+    acceptBatch.value = batch;
+    acceptForm.volume = batch.freeVolume;
+  } catch (e) {
+    error.value = errMsg(e);
+  } finally {
+    acceptBatchLoading.value = false;
+  }
+}
+
+async function submitAccept() {
+  if (!acceptTarget.value) return;
+  if (!acceptForm.batchId) {
+    error.value = "Выберите партию";
+    return;
+  }
+  saving.value = true;
+  error.value = "";
+  try {
+    await pilesApi.acceptBatch(acceptTarget.value.id, {
+      batchId: acceptForm.batchId,
+      volume: acceptForm.volume ?? 0,
+    });
+    acceptTarget.value = null;
+    await Promise.all([load(), loadOptions()]);
+  } catch (e) {
+    error.value = errMsg(e);
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function openHistory(h: PileDto) {
@@ -213,7 +266,7 @@ onMounted(() => {
               <td>{{ h.warehouseNumber || "—" }}</td>
               <td>{{ pileStatusLabels[h.status] }}</td>
               <td>{{ fmtDate(h.createdAt) }}</td>
-              <td>
+              <td class="w-[min(250px,75%)] flex justify-between items-center">
                 {{ h.originSource || "—" }}
                 <button class="secondary" @click="openHistory(h)">
                   история
@@ -221,6 +274,9 @@ onMounted(() => {
               </td>
               <td>{{ h.batchNumbers.join(", ") || "—" }}</td>
               <td class="flex gap-2">
+                <button class="secondary" @click="openAccept(h)">
+                  Принять партию
+                </button>
                 <button class="secondary" @click="openSplit(h)">
                   Разделить
                 </button>
@@ -358,6 +414,47 @@ onMounted(() => {
       <div class="actions">
         <button class="secondary" @click="mergeMode = false">Отмена</button>
         <button :disabled="saving" @click="submitMerge">Объединить</button>
+      </div>
+    </Modal>
+
+    <Modal
+      v-if="acceptTarget"
+      :title="`Принять партию в штабель ${acceptTarget.pileNumber}`"
+      @close="acceptTarget = null"
+    >
+      <div class="form-grid">
+        <label class="full">
+          Партия
+          <select v-model="acceptForm.batchId" @change="onAcceptBatchChange">
+            <option value="" disabled>Выберите партию</option>
+            <option v-for="o in batchOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
+            </option>
+          </select>
+        </label>
+        <label>
+          Объем, т
+          <DecimalInput v-model="acceptForm.volume" />
+        </label>
+      </div>
+      <p v-if="acceptBatchLoading" class="muted">Загрузка остатка партии…</p>
+      <p v-else-if="acceptBatch" class="muted">
+        Свободный остаток партии {{ acceptBatch.batchNumber }}:
+        {{ fmt(acceptBatch.freeVolume) }} т — подставлен в объем, можно
+        уменьшить.
+      </p>
+      <p v-else class="muted">
+        Выберите партию — её свободный остаток подставится в объем автоматически.
+      </p>
+      <p class="muted">
+        Объем штабеля увеличится на указанный, свободный остаток партии
+        уменьшится.
+      </p>
+      <div class="actions">
+        <button class="secondary" @click="acceptTarget = null">Отмена</button>
+        <button :disabled="saving || acceptBatchLoading" @click="submitAccept">
+          Принять
+        </button>
       </div>
     </Modal>
 
