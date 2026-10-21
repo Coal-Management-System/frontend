@@ -24,12 +24,17 @@ const router = createRouter({
     { path: '/piles', name: 'piles', component: PilesView },
     { path: '/movements', name: 'movements', component: MovementsView },
     { path: '/qr', name: 'qr', component: QrView },
-    { path: '/qr/:type/:id', name: 'qr-resolve', component: QrResolveView }
+    { path: '/qr/:type/:id', name: 'qr-resolve', component: QrResolveView, meta: { public: true } }
   ]
 })
 
 router.beforeEach((to) => {
   const authed = !!getToken()
+  // The QR passport page is opened by plain phone cameras with no session;
+  // its backing /api/qr/** endpoints are public, so let it through unauthed.
+  if (!authed && to.meta.public) {
+    return true
+  }
   if (!authed && to.name !== 'login') {
     return { name: 'login', query: to.fullPath === '/' ? {} : { redirect: to.fullPath } }
   }

@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useTheme } from '@/composables/useTheme'
+import { getToken } from '@/lib/session'
 import { roleLabels, shiftLabels } from '@/lib/format'
 
 const route = useRoute()
@@ -12,6 +13,10 @@ const { user, logout, loadMe } = useAuth()
 const { theme, toggle: toggleTheme } = useTheme()
 
 const isLogin = computed(() => route.name === 'login')
+// An anonymous visitor following a printed QR link gets a standalone page
+// (no sidebar/topbar). Decided from the stored token so a signed-in user never
+// sees a shell-less flash while loadMe() is still in flight.
+const isAnonymousPublic = computed(() => route.meta.public === true && !getToken())
 const initials = computed(() => {
   const parts = (user.value?.fullName ?? '').split(/\s+/).filter(Boolean)
   if (!parts.length) return '—'
@@ -75,6 +80,10 @@ const today = new Date().toLocaleDateString('ru-RU', {
 
 <template>
   <RouterView v-if="isLogin" />
+  <template v-else-if="isAnonymousPublic">
+    <RouterView />
+    <ToastHost />
+  </template>
   <div v-else class="flex min-h-screen">
     <aside class="sidebar">
       <div class="brand">

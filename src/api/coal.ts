@@ -19,6 +19,7 @@ import type {
   PileSplitRequest,
   PileTransferRequest,
   QualityHistoryRow,
+  QrPassportDto,
   WarehouseCreateRequest,
   WarehouseDto
 } from './types'
@@ -90,3 +91,10 @@ export const dashboardApi = {
 
 export const qrImageUrl = (type: 'batch' | 'pile' | 'movement', id: string) =>
   `/api/qr/${type}/${id}.png`
+
+// Public (no login) read of the whole passport, for the page a plain phone
+// camera lands on after scanning the printed QR.
+export const qrApi = {
+  passport: (type: 'batch' | 'pile' | 'movement', id: string) =>
+    http.get<QrPassportDto>(`/qr/${type}/${id}`).then(r => r.data)
+}

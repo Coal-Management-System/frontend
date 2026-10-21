@@ -244,6 +244,15 @@ export interface DashboardDto {
   labCount: number
 }
 
+export interface QrPassportDto {
+  type: 'batch' | 'pile' | 'movement'
+  batch: BatchDto | null
+  pile: PileDto | null
+  movement: MovementDto | null
+  quality: QualityHistoryRow[]
+  analyses: AnalysisDto[]
+}
+
 export type UserRole = 'ADMIN' | 'MANAGER' | 'USER'
 export type UserShift = 'A' | 'B'
 
