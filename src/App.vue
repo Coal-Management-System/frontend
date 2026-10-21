@@ -3,11 +3,13 @@ import { computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
 import { useAuth } from '@/composables/useAuth'
+import { useTheme } from '@/composables/useTheme'
 import { roleLabels, shiftLabels } from '@/lib/format'
 
 const route = useRoute()
 const router = useRouter()
 const { user, logout, loadMe } = useAuth()
+const { theme, toggle: toggleTheme } = useTheme()
 
 const isLogin = computed(() => route.name === 'login')
 const initials = computed(() => {
@@ -106,6 +108,19 @@ const today = new Date().toLocaleDateString('ru-RU', {
           {{ currentLabel }}
         </div>
         <div class="flex items-center gap-3">
+          <button
+            class="ghost btn-sm theme-toggle"
+            :title="theme === 'dark' ? 'Светлая тема' : 'Темная тема'"
+            :aria-label="theme === 'dark' ? 'Включить светлую тему' : 'Включить темную тему'"
+            @click="toggleTheme"
+          >
+            <svg v-if="theme === 'dark'" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3.5V2M12 22v-1.5M3.5 12H2M22 12h-1.5M5.6 5.6 4.5 4.5M19.5 19.5l-1.1-1.1M5.6 18.4l-1.1 1.1M19.5 4.5l-1.1 1.1M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.5 14.8A8.5 8.5 0 0 1 9.2 3.5a8.5 8.5 0 1 0 11.3 11.3Z" />
+            </svg>
+          </button>
           <span class="chip-date">{{ today }}</span>
           <span class="user-chip">
             <span class="avatar">{{ initials }}</span>

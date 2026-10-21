@@ -27,12 +27,8 @@
     border-radius: 12px;
     display: grid;
     place-items: center;
-    background: linear-gradient(
-      140deg,
-      rgba(34, 211, 238, 0.9),
-      rgba(59, 130, 246, 0.85)
-    );
-    box-shadow: 0 0 22px rgba(34, 211, 238, 0.45);
+    background: linear-gradient(140deg, var(--logo-grad-a), var(--logo-grad-b));
+    box-shadow: var(--logo-glow);
 
     svg {
       width: 22px;
@@ -80,19 +76,17 @@
     }
     &:hover {
       color: $ink;
-      background: rgba(99, 141, 255, 0.08);
+      background: var(--accent-wash);
     }
     &.router-link-active {
-      color: #eafcff;
+      color: var(--nav-active-ink);
       background: linear-gradient(
         90deg,
-        rgba(34, 211, 238, 0.22),
-        rgba(59, 130, 246, 0.1)
+        var(--nav-active-grad-a),
+        var(--nav-active-grad-b)
       );
-      border-color: rgba(34, 211, 238, 0.35);
-      box-shadow:
-        0 0 18px rgba(34, 211, 238, 0.18),
-        inset 0 0 12px rgba(34, 211, 238, 0.08);
+      border-color: var(--nav-active-border);
+      box-shadow: var(--nav-active-shadow);
 
       svg {
         color: $neon-cyan;
@@ -111,8 +105,8 @@
     border-radius: 14px;
     background: linear-gradient(
       150deg,
-      rgba(34, 211, 238, 0.12),
-      rgba(139, 92, 246, 0.08)
+      var(--foot-grad-a),
+      var(--foot-grad-b)
     );
 
     b {
@@ -169,7 +163,7 @@
     padding: 0.3rem 0.75rem 0.3rem 0.3rem;
     border: 1px solid $line;
     border-radius: 999px;
-    background: rgba(99, 141, 255, 0.08);
+    background: var(--accent-wash);
   }
   .avatar {
     width: 30px;
@@ -178,7 +172,7 @@
     display: grid;
     place-items: center;
     background: linear-gradient(140deg, $neon-violet, $neon-blue);
-    box-shadow: 0 0 14px rgba(167, 139, 250, 0.5);
+    box-shadow: var(--avatar-glow);
     font-size: 0.8rem;
     font-weight: 700;
     color: $btn-ink;
@@ -216,9 +210,9 @@
     display: inline-block;
     margin: 0.5rem 0;
     padding: 0.55rem 0.8rem;
-    border: 1px solid rgba(251, 113, 133, 0.35);
+    border: 1px solid var(--error-border);
     border-radius: 10px;
-    background: rgba(251, 113, 133, 0.08);
+    background: var(--error-bg);
     color: $neon-red;
     font-size: 0.85rem;
   }
@@ -256,13 +250,13 @@
   button.secondary,
   .btn.secondary {
     border: 1px solid $line-strong;
-    background: rgba(99, 141, 255, 0.1);
+    background: var(--secondary-bg);
     color: $ink;
     box-shadow: none;
 
     &:hover {
-      background: rgba(99, 141, 255, 0.18);
-      box-shadow: 0 0 16px rgba(99, 141, 255, 0.2);
+      background: var(--secondary-bg-hover);
+      box-shadow: var(--secondary-hover-shadow);
     }
   }
   button.danger {
@@ -371,7 +365,7 @@
       &.active {
         color: $neon-cyan;
         border-bottom-color: $neon-cyan;
-        text-shadow: 0 0 14px rgba(34, 211, 238, 0.5);
+        text-shadow: var(--tab-glow);
       }
     }
   }
@@ -398,8 +392,8 @@
     padding: 1rem;
     border: 1px solid $line-strong;
     border-radius: 16px;
-    background: #f8fafc;
-    box-shadow: 0 0 34px rgba(34, 211, 238, 0.25);
+    background: var(--qr-bg);
+    box-shadow: var(--qr-glow);
 
     img {
       display: block;
@@ -417,7 +411,7 @@
     justify-content: center;
     padding: 5vh 1rem;
     overflow: auto;
-    background: rgba(3, 6, 14, 0.66);
+    background: var(--backdrop);
     backdrop-filter: blur(6px);
   }
   .modal {
@@ -426,9 +420,7 @@
     border: 1px solid $line-strong;
     border-radius: 18px;
     background: linear-gradient(165deg, $modal-a, $modal-b);
-    box-shadow:
-      0 30px 80px rgba(0, 0, 0, 0.6),
-      0 0 40px rgba(34, 211, 238, 0.08);
+    box-shadow: var(--modal-shadow);
 
     h2 {
       margin: 0 0 1rem;
@@ -520,8 +512,8 @@
     }
     &:focus-visible {
       outline: none;
-      border-color: rgba(34, 211, 238, 0.55);
-      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+      border-color: var(--focus-ring);
+      box-shadow: 0 0 0 3px var(--focus-ring-soft);
     }
     svg {
       @include icon-strokes(16px, 1.7);
@@ -647,7 +639,7 @@
     border: 1px solid $line-strong;
     border-radius: 12px;
     background: linear-gradient(165deg, $modal-a, $modal-b);
-    box-shadow: 0 18px 40px rgba(2, 6, 18, 0.55);
+    box-shadow: var(--toast-shadow);
     color: $ink;
     font-size: 0.85rem;
     cursor: pointer;
@@ -699,6 +691,27 @@
   .toast-leave-to {
     opacity: 0;
     transform: translateX(12px);
+  }
+
+  /* ---------- theme toggle ---------- */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 10px;
+
+    svg {
+      @include icon-strokes(17px, 1.7);
+    }
+  }
+  .login-theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 10;
   }
 
   /* ---------- login ---------- */
