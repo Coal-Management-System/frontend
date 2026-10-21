@@ -624,4 +624,119 @@
     gap: 0.5rem;
     margin-top: 0.6rem;
   }
+
+  /* ---------- toasts (above modals: z 100 vs backdrop 50) ---------- */
+  .toast-host {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    width: min(420px, calc(100vw - 2rem));
+    pointer-events: none;
+  }
+  .toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid $line-strong;
+    border-radius: 12px;
+    background: linear-gradient(165deg, $modal-a, $modal-b);
+    box-shadow: 0 18px 40px rgba(2, 6, 18, 0.55);
+    color: $ink;
+    font-size: 0.85rem;
+    cursor: pointer;
+
+    &.error {
+      border-color: rgba(251, 113, 133, 0.45);
+      .toast-mark {
+        color: $neon-red;
+      }
+    }
+    &.success {
+      border-color: rgba(52, 211, 153, 0.45);
+      .toast-mark {
+        color: $neon-green;
+      }
+    }
+  }
+  .toast-mark {
+    flex: none;
+    font-weight: 700;
+  }
+  .toast-text {
+    flex: 1;
+    min-width: 0;
+    white-space: pre-line;
+  }
+  .toast-x {
+    flex: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: $mute;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      color: $ink;
+    }
+  }
+  .toast-enter-active,
+  .toast-leave-active {
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease;
+  }
+  .toast-enter-from,
+  .toast-leave-to {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+
+  /* ---------- login ---------- */
+  .login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+  }
+  .login-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    width: min(400px, 100%);
+    padding: 1.6rem 1.7rem;
+    border: 1px solid $line-strong;
+    border-radius: 18px;
+    background: linear-gradient(165deg, $modal-a, $modal-b);
+    box-shadow: $shadow-panel;
+
+    h1 {
+      margin: 0.4rem 0 0;
+      font-size: 1.15rem;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      color: $mute;
+      font-size: 0.8rem;
+    }
+    button[type="submit"] {
+      margin-top: 0.3rem;
+    }
+    .muted {
+      margin: 0;
+      font-size: 0.75rem;
+    }
+  }
 }

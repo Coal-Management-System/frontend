@@ -13,6 +13,7 @@ import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
+import { notifyError } from "@/composables/useToast";
 
 const {
   rows,
@@ -74,7 +75,7 @@ async function loadOptions() {
         pilesApi.options(),
       ]);
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   }
 }
 
@@ -103,7 +104,6 @@ async function onAcceptBatchChange() {
   acceptForm.volume = null;
   if (!acceptForm.batchId) return;
   acceptBatchLoading.value = true;
-  error.value = "";
   try {
     const batch = await batchesApi.get(acceptForm.batchId);
     // Ignore a late response if the user already picked another party.
@@ -111,7 +111,7 @@ async function onAcceptBatchChange() {
     acceptBatch.value = batch;
     acceptForm.volume = batch.freeVolume;
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     acceptBatchLoading.value = false;
   }
@@ -120,11 +120,10 @@ async function onAcceptBatchChange() {
 async function submitAccept() {
   if (!acceptTarget.value) return;
   if (!acceptForm.batchId) {
-    error.value = "Выберите партию";
+    notifyError("Выберите партию");
     return;
   }
   saving.value = true;
-  error.value = "";
   try {
     await pilesApi.acceptBatch(acceptTarget.value.id, {
       batchId: acceptForm.batchId,
@@ -133,7 +132,7 @@ async function submitAccept() {
     acceptTarget.value = null;
     await Promise.all([load(), loadOptions()]);
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }
@@ -141,14 +140,18 @@ async function submitAccept() {
 
 async function openHistory(h: PileDto) {
   historyTarget.value = h;
-  history.value = await pilesApi.history(h.id);
+  try {
+    history.value = await pilesApi.history(h.id);
+  } catch (e) {
+    historyTarget.value = null;
+    notifyError(errMsg(e));
+  }
 }
 
 async function submitCreate() {
-  error.value = "";
   const number = createForm.pileNumber.trim();
   if (!number) {
-    error.value = "Укажите номер штабеля";
+    notifyError("Укажите номер штабеля");
     return;
   }
   saving.value = true;
@@ -166,7 +169,7 @@ async function submitCreate() {
     createForm.batchIds = [];
     await Promise.all([load(), loadOptions()]);
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }
@@ -175,7 +178,6 @@ async function submitCreate() {
 async function submitSplit() {
   if (!splitTarget.value) return;
   saving.value = true;
-  error.value = "";
   try {
     await pilesApi.split(splitTarget.value.id, {
       volume: splitForm.volume ?? 0,
@@ -186,7 +188,7 @@ async function submitSplit() {
     splitTarget.value = null;
     await Promise.all([load(), loadOptions()]);
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }
@@ -194,7 +196,6 @@ async function submitSplit() {
 
 async function submitMerge() {
   saving.value = true;
-  error.value = "";
   try {
     await pilesApi.merge({
       targetPileId: mergeForm.targetPileId,
@@ -205,7 +206,7 @@ async function submitMerge() {
     mergeForm.targetPileId = "";
     await Promise.all([load(), loadOptions()]);
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }
@@ -214,7 +215,6 @@ async function submitMerge() {
 async function submitTransfer() {
   if (!transferTarget.value) return;
   saving.value = true;
-  error.value = "";
   try {
     await pilesApi.transfer(transferTarget.value.id, {
       toWarehouseId: transferForm.toWarehouseId,
@@ -222,7 +222,7 @@ async function submitTransfer() {
     transferTarget.value = null;
     await load();
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }
@@ -447,8 +447,7 @@ onMounted(() => {
         Выберите партию — её свободный остаток подставится в объем автоматически.
       </p>
       <p class="muted">
-        Объем штабеля увеличится на указанный, свободный остаток партии
-        уменьшится.
+        Объем штабеля увеличится на указанный; размер партии не меняется.
       </p>
       <div class="actions">
         <button class="secondary" @click="acceptTarget = null">Отмена</button>

@@ -22,6 +22,7 @@ import {
 import DecimalInput from "@/components/DecimalInput.vue";
 import DateTimePicker from "@/components/DateTimePicker.vue";
 import Modal from "@/components/Modal.vue";
+import { notifyError } from "@/composables/useToast";
 
 const route = useRoute();
 const router = useRouter();
@@ -57,26 +58,23 @@ const form = reactive({
 const deleteStep = ref<0 | 1 | 2>(0);
 const deleteConfirm = ref("");
 const deleteKey = ref("");
-const deleteError = ref("");
 const deleting = ref(false);
 
 function openDelete() {
   deleteStep.value = 1;
   deleteConfirm.value = "";
   deleteKey.value = "";
-  deleteError.value = "";
 }
 
 async function confirmDelete() {
   if (!batch.value || deleteConfirm.value !== batch.value.batchNumber) return;
   deleting.value = true;
-  deleteError.value = "";
   try {
     await batchesApi.remove(batch.value.id, deleteKey.value, deleteConfirm.value);
     deleteStep.value = 0;
     await router.push("/batches");
   } catch (e) {
-    deleteError.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     deleting.value = false;
   }
@@ -122,7 +120,6 @@ async function save() {
   if (!batch.value) return;
   saving.value = true;
   saved.value = false;
-  error.value = "";
   try {
     const payload: BatchUpdateRequest = {
       batchNumber: form.batchNumber.trim(),
@@ -145,7 +142,7 @@ async function save() {
     fillForm(batch.value);
     saved.value = true;
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }
@@ -154,7 +151,6 @@ async function save() {
 function resetForm() {
   if (batch.value) fillForm(batch.value);
   saved.value = false;
-  error.value = "";
 }
 </script>
 
@@ -204,7 +200,6 @@ function resetForm() {
               <input v-model="deleteKey" type="password" autocomplete="off" />
             </label>
           </div>
-          <p v-if="deleteError" class="error">{{ deleteError }}</p>
           <div class="actions">
             <button class="secondary" @click="deleteStep = 0">Отмена</button>
             <button

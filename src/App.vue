@@ -1,8 +1,29 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import ToastHost from '@/components/ToastHost.vue'
+import { useAuth } from '@/composables/useAuth'
+import { roleLabels, shiftLabels } from '@/lib/format'
 
 const route = useRoute()
+const router = useRouter()
+const { user, logout, loadMe } = useAuth()
+
+const isLogin = computed(() => route.name === 'login')
+const initials = computed(() => {
+  const parts = (user.value?.fullName ?? '').split(/\s+/).filter(Boolean)
+  if (!parts.length) return '—'
+  return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase()
+})
+
+async function onLogout() {
+  await logout()
+  await router.push('/login')
+}
+
+onMounted(() => {
+  void loadMe()
+})
 
 const nav = [
   {
@@ -51,7 +72,8 @@ const today = new Date().toLocaleDateString('ru-RU', {
 </script>
 
 <template>
-  <div class="flex min-h-screen">
+  <RouterView v-if="isLogin" />
+  <div v-else class="flex min-h-screen">
     <aside class="sidebar">
       <div class="brand">
         <span class="brand-logo">
@@ -86,17 +108,25 @@ const today = new Date().toLocaleDateString('ru-RU', {
         <div class="flex items-center gap-3">
           <span class="chip-date">{{ today }}</span>
           <span class="user-chip">
-            <span class="avatar">Д</span>
+            <span class="avatar">{{ initials }}</span>
             <span class="user-meta">
-              <b>Диспетчер</b>
-              <i>смена А</i>
+              <b>{{ user?.fullName ?? 'Загрузка…' }}</b>
+              <i>
+                {{
+                  user
+                    ? `${roleLabels[user.role]} · ${shiftLabels[user.shift]}`
+                    : ''
+                }}
+              </i>
             </span>
           </span>
+          <button class="secondary" @click="onLogout">Выйти</button>
         </div>
       </header>
       <main class="content">
         <RouterView />
       </main>
     </div>
+    <ToastHost />
   </div>
 </template>

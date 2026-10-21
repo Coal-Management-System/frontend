@@ -243,3 +243,24 @@ export interface DashboardDto {
   warehouseCount: number
   labCount: number
 }
+
+export type UserRole = 'ADMIN' | 'MANAGER' | 'USER'
+export type UserShift = 'A' | 'B'
+
+export interface AuthUserDto {
+  id: string
+  username: string
+  fullName: string
+  role: UserRole
+  shift: UserShift
+}
+
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+export interface LoginResponse {
+  token: string
+  user: AuthUserDto
+}

@@ -14,6 +14,8 @@ import DateTimePicker from "@/components/DateTimePicker.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
+import { notifyError } from "@/composables/useToast";
+import { useAuth } from "@/composables/useAuth";
 
 // Two lists on one page: the prefixes keep their route-query keys apart.
 const {
@@ -49,10 +51,8 @@ const {
 const batchOptions = ref<OptionDto[]>([]);
 const labOptions = ref<OptionDto[]>([]);
 
-const formError = ref("");
-const error = computed(
-  () => formError.value || labsError.value || analysesError.value,
-);
+// Form failures go to the toast host; this line only reports list-load errors.
+const error = computed(() => labsError.value || analysesError.value);
 const showLab = ref(false);
 const showAnalysis = ref(false);
 const saving = ref(false);
@@ -79,6 +79,16 @@ const form = reactive({
   values: [] as ValueRow[],
 });
 
+const { user } = useAuth();
+
+function openAnalysis() {
+  // The responsible person defaults to whoever is logged in; still editable.
+  if (user.value) {
+    form.responsibleEmployee = user.value.fullName;
+  }
+  showAnalysis.value = true;
+}
+
 async function loadOptions() {
   try {
     [batchOptions.value, labOptions.value] = await Promise.all([
@@ -86,7 +96,7 @@ async function loadOptions() {
       labsApi.options(),
     ]);
   } catch (e) {
-    formError.value = errMsg(e);
+    notifyError(errMsg(e));
   }
 }
 
@@ -96,24 +106,22 @@ function addRow() {
 
 async function submitLab() {
   saving.value = true;
-  formError.value = "";
   try {
     await labsApi.createLab(labName.value);
     labName.value = "";
     showLab.value = false;
     await Promise.all([loadLabs(), loadOptions()]);
   } catch (e) {
-    formError.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }
 }
 
 async function submitAnalysis() {
-  formError.value = "";
   const sample = form.sampleNumber.trim();
   if (!sample) {
-    formError.value = "Укажите номер пробы";
+    notifyError("Укажите номер пробы");
     return;
   }
   saving.value = true;
@@ -141,7 +149,7 @@ async function submitAnalysis() {
     form.values = [];
     await analysesFirst();
   } catch (e) {
-    formError.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }
@@ -162,7 +170,7 @@ onMounted(() => {
         <button class="secondary" @click="showLab = true">
           Новая лаборатория +
         </button>
-        <button @click="showAnalysis = true">Добавить результат +</button>
+        <button @click="openAnalysis">Добавить результат +</button>
       </div>
     </div>
     <p v-if="error" class="error">{{ error }}</p>

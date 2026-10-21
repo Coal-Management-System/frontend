@@ -5,6 +5,8 @@ import type {
   Indicator,
   MovementOperation,
   OriginType,
+  UserRole,
+  UserShift,
   WarehouseStatus
 } from '@/api/types'
 
@@ -56,6 +58,17 @@ export const indicatorLabels: Record<Indicator, string> = {
 export const warehouseStatusLabels: Record<WarehouseStatus, string> = {
   ACTIVE: 'Активен',
   CLOSED: 'Закрыт'
+}
+
+export const roleLabels: Record<UserRole, string> = {
+  ADMIN: 'Администратор',
+  MANAGER: 'Менеджер',
+  USER: 'Пользователь'
+}
+
+export const shiftLabels: Record<UserShift, string> = {
+  A: 'смена А',
+  B: 'смена Б'
 }
 
 const fieldLabels: Record<string, string> = {

@@ -6,6 +6,7 @@ import { errMsg, fmt, fmtDate, pileStatusLabels, warehouseStatusLabels } from '@
 import Modal from '@/components/Modal.vue'
 import Pagination from '@/components/Pagination.vue'
 import { usePagedList } from '@/composables/usePagedList'
+import { notifyError } from '@/composables/useToast'
 
 const {
   rows,
@@ -37,15 +38,19 @@ watch(page, () => {
 async function togglePiles(w: WarehouseDto) {
   open.value[w.id] = !open.value[w.id]
   if (open.value[w.id] && !pilesByWarehouse.value[w.id]) {
-    pilesByWarehouse.value[w.id] = await warehousesApi.piles(w.id)
+    try {
+      pilesByWarehouse.value[w.id] = await warehousesApi.piles(w.id)
+    } catch (e) {
+      open.value[w.id] = false
+      notifyError(errMsg(e))
+    }
   }
 }
 
 async function submit() {
-  error.value = ''
   const number = form.number.trim()
   if (!number) {
-    error.value = 'Укажите номер склада'
+    notifyError('Укажите номер склада')
     return
   }
   saving.value = true
@@ -56,7 +61,7 @@ async function submit() {
     form.location = ''
     await load()
   } catch (e) {
-    error.value = errMsg(e)
+    notifyError(errMsg(e))
   } finally {
     saving.value = false
   }

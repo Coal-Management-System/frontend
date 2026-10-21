@@ -15,6 +15,7 @@ import DateTimePicker from "@/components/DateTimePicker.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
+import { notifyError } from "@/composables/useToast";
 
 const {
   rows,
@@ -60,10 +61,9 @@ function originOf(b: BatchDto): string {
 }
 
 async function submit() {
-  error.value = "";
   const number = form.batchNumber.trim();
   if (!number) {
-    error.value = "Укажите номер партии";
+    notifyError("Укажите номер партии");
     return;
   }
   saving.value = true;
@@ -89,7 +89,7 @@ async function submit() {
     resetForm();
     await load();
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }

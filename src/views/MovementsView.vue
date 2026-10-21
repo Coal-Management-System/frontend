@@ -7,6 +7,7 @@ import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
+import { notifyError } from "@/composables/useToast";
 
 const {
   rows,
@@ -51,13 +52,12 @@ async function loadOptions() {
       pilesApi.options(),
     ]);
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   }
 }
 
 async function submit() {
   saving.value = true;
-  error.value = "";
   try {
     await movementsApi.create({
       batchId: form.batchId || null,
@@ -71,7 +71,7 @@ async function submit() {
     showCreate.value = false;
     await first();
   } catch (e) {
-    error.value = errMsg(e);
+    notifyError(errMsg(e));
   } finally {
     saving.value = false;
   }
