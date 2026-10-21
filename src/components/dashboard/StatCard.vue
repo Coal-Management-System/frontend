@@ -34,7 +34,7 @@ const toneGlow: Record<StatTone, string> = {
 
 <template>
   <div
-    class="stat-card flex h-full flex-col min-h-(--card-h,auto) relative overflow-hidden rounded-panel border border-line bg-[linear-gradient(160deg,rgba(19,31,63,0.62),rgba(8,14,30,0.86))] p-4 shadow-panel"
+    class="stat-card flex h-full flex-col min-h-(--card-h,auto) relative overflow-hidden rounded-panel border border-line bg-[linear-gradient(160deg,var(--glass-a),var(--glass-b))] p-4 shadow-panel"
   >
     <span
       :class="[

@@ -58,7 +58,7 @@ onMounted(async () => {
       <p>
         <RouterLink
           :to="`/qr/${type}/${selected}`"
-          class="btn secondary text-black"
+          class="btn secondary"
           >Открыть страницу</RouterLink
         >
       </p>

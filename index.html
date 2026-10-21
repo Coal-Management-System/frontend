@@ -7,6 +7,15 @@
   </head>
   <body>
     <div id="app"></div>
+    <script>
+      // Apply the stored theme before the first paint to avoid a flash.
+      try {
+        document.documentElement.dataset.theme =
+          localStorage.getItem("coal-theme") === "light" ? "light" : "dark";
+      } catch (e) {
+        document.documentElement.dataset.theme = "dark";
+      }
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

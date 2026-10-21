@@ -1,42 +1,44 @@
 // SCSS design tokens: variables and mixins shared by the partials.
-// Tailwind theme tokens (utilities) live in src/style.css @theme block.
+// Every color/surface token is an alias for a runtime CSS custom property so
+// the light theme (src/styles/_theme.scss) can re-skin the whole app by
+// overriding the variables; Tailwind utilities resolve the same --color-* names.
 
-$night: #050914;
-$ink: #e8eefb;
-$ink-soft: #cdd8ef;
-$ink-bright: #eaf1ff;
-$mute: #8b9bc0;
-$mute-2: #64749a;
-$chart: #7c8db5;
+$night: var(--color-night);
+$ink: var(--color-ink);
+$ink-soft: var(--color-ink-soft);
+$ink-bright: var(--color-ink-bright);
+$mute: var(--color-mute);
+$mute-2: var(--color-mute-2);
+$chart: var(--color-chart);
 
-$neon-cyan: #22d3ee;
-$neon-blue: #60a5fa;
-$neon-violet: #a78bfa;
-$neon-green: #34d399;
-$neon-red: #fb7185;
-$neon-amber: #fbbf24;
+$neon-cyan: var(--color-neon-cyan);
+$neon-blue: var(--color-neon-blue);
+$neon-violet: var(--color-neon-violet);
+$neon-green: var(--color-neon-green);
+$neon-red: var(--color-neon-red);
+$neon-amber: var(--color-neon-amber);
 
-$line: rgba(99, 141, 255, 0.16);
-$line-strong: rgba(99, 141, 255, 0.3);
-$line-faint: rgba(99, 141, 255, 0.08);
-$hover-wash: rgba(99, 141, 255, 0.05);
-$wash: rgba(99, 141, 255, 0.06);
+$line: var(--color-line);
+$line-strong: var(--color-line-strong);
+$line-faint: var(--color-line-faint);
+$hover-wash: var(--hover-wash);
+$wash: var(--wash);
 
-$glass-a: rgba(19, 31, 63, 0.62);
-$glass-b: rgba(8, 14, 30, 0.86);
-$sidebar-a: rgba(10, 18, 38, 0.9);
-$sidebar-b: rgba(5, 9, 20, 0.72);
-$modal-a: rgba(20, 33, 66, 0.96);
-$modal-b: rgba(7, 12, 26, 0.98);
-$field-bg: rgba(5, 10, 22, 0.7);
-$topbar-bg: rgba(6, 11, 24, 0.55);
-$option-bg: #0a1226;
-$btn-ink: #04101f;
+$glass-a: var(--glass-a);
+$glass-b: var(--glass-b);
+$sidebar-a: var(--sidebar-a);
+$sidebar-b: var(--sidebar-b);
+$modal-a: var(--modal-a);
+$modal-b: var(--modal-b);
+$field-bg: var(--field-bg);
+$topbar-bg: var(--topbar-bg);
+$option-bg: var(--option-bg);
+$btn-ink: var(--btn-ink);
 
 $radius-panel: 16px;
-$shadow-panel: 0 18px 40px rgba(2, 6, 18, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-$shadow-neon: 0 0 18px rgba(34, 211, 238, 0.28);
-$shadow-neon-strong: 0 0 26px rgba(34, 211, 238, 0.4);
+$shadow-panel: var(--shadow-panel);
+$shadow-neon: var(--shadow-neon);
+$shadow-neon-strong: var(--shadow-neon-strong);
 
 @mixin glass-panel {
   border: 1px solid $line;
@@ -46,7 +48,7 @@ $shadow-neon-strong: 0 0 26px rgba(34, 211, 238, 0.4);
 }
 
 @mixin glow-text {
-  background: linear-gradient(90deg, #f4f8ff, #b9c8ea);
+  background: linear-gradient(90deg, var(--glow-text-a), var(--glow-text-b));
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
