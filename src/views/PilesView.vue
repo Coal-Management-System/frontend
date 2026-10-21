@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref } from "vue";
-import { RouterLink } from "vue-router";
+import { onMounted, reactive, ref } from "vue";
 import { batchesApi, pilesApi, warehousesApi } from "@/api/coal";
 import type { BatchDto, MovementDto, OptionDto, PileDto } from "@/api/types";
 import {
@@ -10,6 +9,7 @@ import {
   pileStatusLabels,
   operationLabels,
 } from "@/lib/format";
+import BatchChips from "@/components/BatchChips.vue";
 import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
@@ -43,37 +43,8 @@ const mergeMode = ref(false);
 const transferTarget = ref<PileDto | null>(null);
 const historyTarget = ref<PileDto | null>(null);
 const history = ref<MovementDto[]>([]);
-
-// Popover listing every party inside a pile. Anchored with fixed positioning
-// (viewport coords) and teleported to <body> so the table's overflow-x-auto
-// wrapper never clips it.
-const popover = ref<{
-  pileId: string;
-  top: number;
-  left: number;
-  numbers: string[];
-  ids: string[];
-} | null>(null);
-
-function togglePopover(h: PileDto, ev: MouseEvent) {
-  if (popover.value?.pileId === h.id) {
-    popover.value = null;
-    return;
-  }
-  const btn = ev.currentTarget as HTMLElement;
-  const r = btn.getBoundingClientRect();
-  popover.value = {
-    pileId: h.id,
-    top: r.bottom + 6,
-    left: r.left,
-    numbers: h.batchNumbers,
-    ids: h.batchIds,
-  };
-}
-
-function closePopover() {
-  popover.value = null;
-}
+// The parties chip + popover now live in the shared <BatchChips> component,
+// reused by the warehouses page; no local popover state is needed here.
 
 const createForm = reactive({
   pileNumber: "",
@@ -269,16 +240,6 @@ async function submitTransfer() {
 onMounted(() => {
   void load();
   void loadOptions();
-  // Outside click / scroll / resize dismiss the parties popover.
-  document.addEventListener("click", closePopover);
-  window.addEventListener("scroll", closePopover, true);
-  window.addEventListener("resize", closePopover);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", closePopover);
-  window.removeEventListener("scroll", closePopover, true);
-  window.removeEventListener("resize", closePopover);
 });
 </script>
 
@@ -325,32 +286,7 @@ onUnmounted(() => {
                 </div>
               </td>
               <td>
-                <button
-                  v-if="h.batchNumbers.length"
-                  class="batch-chip"
-                  :class="{
-                    'batch-chip--open': popover?.pileId === h.id,
-                  }"
-                  @click.stop="togglePopover(h, $event)"
-                >
-                  <span class="batch-chip__label">
-                    {{ h.batchNumbers[0] }}
-                  </span>
-                  <span
-                    v-if="h.batchNumbers.length > 1"
-                    class="batch-chip__more"
-                  >
-                    +{{ h.batchNumbers.length - 1 }}
-                  </span>
-                  <svg
-                    class="batch-chip__caret"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </button>
-                <span v-else class="muted">—</span>
+                <BatchChips :numbers="h.batchNumbers" :ids="h.batchIds" />
               </td>
               <td class="flex gap-2">
                 <button class="secondary" @click="openAccept(h)">
@@ -596,124 +532,6 @@ onUnmounted(() => {
         <button class="secondary" @click="historyTarget = null">Закрыть</button>
       </div>
     </Modal>
-
-    <Teleport to="body">
-      <div
-        v-if="popover"
-        class="batch-popover"
-        :style="{ top: popover.top + 'px', left: popover.left + 'px' }"
-        @click.stop
-      >
-        <p class="batch-popover__title">Партии в штабеле</p>
-        <ul class="batch-popover__list">
-          <li v-for="(num, i) in popover.numbers" :key="popover.ids[i] ?? i">
-            <RouterLink
-              v-if="popover.ids[i]"
-              class="batch-popover__item"
-              :to="`/batches/${popover.ids[i]}`"
-              @click="closePopover"
-            >
-              {{ num }}
-            </RouterLink>
-            <span v-else class="batch-popover__item">{{ num }}</span>
-          </li>
-        </ul>
-      </div>
-    </Teleport>
   </div>
 </template>
 
-<style scoped>
-.batch-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--color-line);
-  background: var(--secondary-bg);
-  color: var(--color-ink);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.batch-chip:hover,
-.batch-chip--open {
-  background: var(--secondary-bg-hover);
-  border-color: var(--color-neon-cyan);
-  box-shadow: var(--secondary-hover-shadow);
-}
-
-.batch-chip__more {
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--accent-wash);
-  color: var(--color-neon-cyan);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.batch-chip__caret {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.7;
-}
-
-.batch-popover {
-  position: fixed;
-  z-index: 60;
-  min-width: 210px;
-  max-width: 320px;
-  padding: 10px;
-  border-radius: 14px;
-  border: 1px solid var(--color-line);
-  background: linear-gradient(160deg, var(--modal-a), var(--modal-b));
-  box-shadow: var(--modal-shadow);
-}
-
-.batch-popover__title {
-  margin: 0 0 8px;
-  padding: 0 4px;
-  color: var(--color-mute);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.batch-popover__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.batch-popover__item {
-  display: block;
-  padding: 6px 10px;
-  border-radius: 9px;
-  color: var(--color-ink);
-  font-size: 0.9rem;
-  text-decoration: none;
-  transition: background 0.12s ease;
-}
-
-a.batch-popover__item:hover {
-  background: var(--accent-wash);
-  color: var(--color-neon-cyan);
-}
-</style>

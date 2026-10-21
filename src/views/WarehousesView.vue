@@ -3,6 +3,7 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import { warehousesApi } from '@/api/coal'
 import type { PileDto, WarehouseCreateRequest, WarehouseDto } from '@/api/types'
 import { errMsg, fmt, fmtDate, pileStatusLabels, warehouseStatusLabels } from '@/lib/format'
+import BatchChips from '@/components/BatchChips.vue'
 import Modal from '@/components/Modal.vue'
 import Pagination from '@/components/Pagination.vue'
 import { usePagedList } from '@/composables/usePagedList'
@@ -119,7 +120,9 @@ onMounted(load)
                     <td>{{ h.pileNumber }}</td>
                     <td>{{ fmt(h.volume) }}</td>
                     <td>{{ pileStatusLabels[h.status] }}</td>
-                    <td>{{ h.batchNumbers.join(', ') || '—' }}</td>
+                    <td>
+                      <BatchChips :numbers="h.batchNumbers" :ids="h.batchIds" />
+                    </td>
                   </tr>
                 </tbody>
               </table>
