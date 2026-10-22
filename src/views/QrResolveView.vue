@@ -257,4 +257,61 @@ function measurement(value: number | null | undefined, unit: string | null | und
 .qr-public__img {
   text-align: center;
 }
+
+/* ---------- mobile: phones open this page by scanning the QR ----------
+   The desktop .kv uses a fixed 250px label column, which overflows narrow
+   screens; stack label over value and let long values wrap instead. */
+@media (max-width: 640px) {
+  .qr-public {
+    padding: 1rem 0.75rem 2.5rem;
+  }
+
+  .qr-public__head h1 {
+    font-size: 1.25rem;
+  }
+
+  .qr-public .kv {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+    padding: 0.85rem 0.9rem;
+    font-size: 0.85rem;
+  }
+
+  .qr-public .kv dt {
+    margin-top: 0.5rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+  }
+
+  .qr-public .kv dt:first-child {
+    margin-top: 0;
+  }
+
+  .qr-public .kv dd {
+    overflow-wrap: anywhere;
+  }
+
+  .qr-public table {
+    font-size: 0.78rem;
+  }
+
+  .qr-public thead th {
+    padding: 0.45rem 0.5rem;
+    white-space: normal;
+  }
+
+  .qr-public tbody td {
+    padding: 0.5rem;
+    overflow-wrap: anywhere;
+  }
+
+  .qr-public__card {
+    padding: 0.6rem 0.7rem;
+  }
+
+  .qr-public__img img {
+    width: 140px;
+    height: 140px;
+  }
+}
 </style>
