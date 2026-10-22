@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { qrApi, qrImageUrl } from '@/api/coal'
+import { qrApi } from '@/api/coal'
 import type { QrPassportDto } from '@/api/types'
 import {
   batchStatusLabels,
@@ -35,283 +35,365 @@ function measurement(value: number | null | undefined, unit: string | null | und
   if (value === null || value === undefined) return '—'
   return unit ? `${fmt(value)} ${unit}` : fmt(value)
 }
+
+/** Mirrors the APK statusColor(): NEW cyan, IN_PROCESSING amber, READY green, SHIPPED mute. */
+function statusClass(status: string | null | undefined): string {
+  switch (status) {
+    case 'NEW':
+      return 'qr-apk__value--cyan'
+    case 'IN_PROCESSING':
+      return 'qr-apk__value--amber'
+    case 'READY_FOR_SHIPMENT':
+      return 'qr-apk__value--green'
+    case 'SHIPPED':
+      return 'qr-apk__value--mute'
+    default:
+      return ''
+  }
+}
 </script>
 
 <template>
-  <div class="qr-public">
-    <header class="qr-public__head">
-      <h1>Паспорт объекта</h1>
-      <p class="muted">Открыто по QR-коду · только просмотр</p>
+  <div class="qr-apk">
+    <header class="qr-apk__bar">
+      <span class="qr-apk__bar-action">Только просмотр</span>
+      <span class="qr-apk__bar-title">Паспорт партии</span>
     </header>
 
-    <p v-if="error" class="error">{{ error }}</p>
+    <p v-if="error" class="qr-apk__error">{{ error }}</p>
 
     <template v-else-if="passport">
-      <!-- Batch passport: same sections the phone app renders -->
+      <!-- Batch passport: same sections / cards / rows the APK renders -->
       <template v-if="passport.batch">
-        <section class="panel qr-public__section">
-          <h2>Общие сведения</h2>
-          <dl class="kv">
-            <dt>Номер партии</dt>
-            <dd>{{ passport.batch.batchNumber }}</dd>
-            <dt>Тип продукции</dt>
-            <dd>{{ passport.batch.productType || '—' }}</dd>
-            <dt>Текущий статус</dt>
-            <dd>{{ batchStatusLabels[passport.batch.status] }}</dd>
-            <dt>Марка угля</dt>
-            <dd>{{ passport.batch.coalGrade || '—' }}</dd>
-            <dt>Фракция</dt>
-            <dd>{{ passport.batch.fraction || '—' }}</dd>
-            <dt>Дата создания</dt>
-            <dd>{{ fmtDate(passport.batch.createdAt) }}</dd>
-          </dl>
-        </section>
-
-        <section class="panel qr-public__section">
-          <h2>Происхождение</h2>
-          <dl class="kv">
-            <dt>Источник образования партии</dt>
-            <dd>{{ originLabels[passport.batch.originType] }}</dd>
-            <dt>Месторождение</dt>
-            <dd>{{ passport.batch.deposit || '—' }}</dd>
-            <dt>Участок добычи</dt>
-            <dd>{{ passport.batch.miningSite || '—' }}</dd>
-            <dt>Карьер</dt>
-            <dd>{{ passport.batch.quarry || '—' }}</dd>
-            <dt>Смена / производственный период</dt>
-            <dd>{{ passport.batch.shiftPeriod || '—' }}</dd>
-            <dt>Поставщик</dt>
-            <dd>{{ passport.batch.supplier || '—' }}</dd>
-            <dt>Дата добычи или поступления</dt>
-            <dd>{{ fmtDate(passport.batch.minedAt) }}</dd>
-            <dt>Партии-источники</dt>
-            <dd>{{ passport.batch.sourceBatchNumbers.join(', ') || '—' }}</dd>
-            <dt>Штабели</dt>
-            <dd>{{ passport.batch.pileNumbers.join(', ') || '—' }}</dd>
-            <dt>Места хранения</dt>
-            <dd>{{ passport.batch.storageLocations.join(', ') || '—' }}</dd>
-          </dl>
-        </section>
-
-        <section class="panel qr-public__section">
-          <h2>Количество, т</h2>
-          <dl class="kv">
-            <dt>Первоначальный вес</dt>
-            <dd>{{ fmt(passport.batch.initialWeight) }}</dd>
-            <dt>Текущий остаток</dt>
-            <dd>{{ fmt(passport.batch.currentRemainder) }}</dd>
-            <dt>Зарезервированный объем</dt>
-            <dd>{{ fmt(passport.batch.reservedVolume) }}</dd>
-            <dt>Свободный объем</dt>
-            <dd>{{ fmt(passport.batch.freeVolume) }}</dd>
-            <dt>Объем в переработке</dt>
-            <dd>{{ fmt(passport.batch.inProcessingVolume) }}</dd>
-            <dt>Объем отгруженной продукции</dt>
-            <dd>{{ fmt(passport.batch.shippedVolume) }}</dd>
-            <dt>Потери</dt>
-            <dd>{{ fmt(passport.batch.losses) }}</dd>
-          </dl>
-        </section>
-
-        <section class="panel qr-public__section">
-          <h2>История качества</h2>
-          <div v-if="passport.quality.length" class="overflow-x-auto">
-            <table>
-              <thead>
-                <tr>
-                  <th>Дата</th>
-                  <th>Этап</th>
-                  <th>Зольность, %</th>
-                  <th>Влажность, %</th>
-                  <th>Калорийность</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(q, i) in passport.quality" :key="i">
-                  <td>{{ fmtDate(q.analysisDate) }}</td>
-                  <td>{{ stageLabels[q.stage] }}</td>
-                  <td>{{ q.ash === null ? '—' : fmt(q.ash) }}</td>
-                  <td>{{ q.moisture === null ? '—' : fmt(q.moisture) }}</td>
-                  <td>{{ q.calorific === null ? '—' : fmt(q.calorific) }}</td>
-                </tr>
-              </tbody>
-            </table>
+        <p class="qr-apk__section">Общая информация</p>
+        <section class="qr-apk__card">
+          <h2 class="qr-apk__card-title">{{ passport.batch.batchNumber }}</h2>
+          <div class="qr-apk__row">
+            <span>Номер партии</span><b>{{ passport.batch.batchNumber }}</b>
           </div>
-          <p v-else class="muted">Замеров качества пока нет</p>
+          <div class="qr-apk__row">
+            <span>Тип продукции</span><b>{{ passport.batch.productType || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Текущий статус</span>
+            <b :class="statusClass(passport.batch.status)">
+              {{ batchStatusLabels[passport.batch.status] }}
+            </b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Марка угля</span><b>{{ passport.batch.coalGrade || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Фракция</span><b>{{ passport.batch.fraction || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Дата создания</span><b>{{ fmtDate(passport.batch.createdAt) }}</b>
+          </div>
         </section>
 
-        <section class="panel qr-public__section">
-          <h2>Протоколы лабораторий</h2>
-          <template v-if="passport.analyses.length">
-            <div v-for="a in passport.analyses" :key="a.id" class="qr-public__card">
-              <p class="qr-public__card-title">
-                {{ a.sampleNumber }} · {{ a.labName }}
-              </p>
-              <dl class="kv">
-                <template v-for="v in a.values" :key="v.indicator">
-                  <dt>{{ indicatorLabels[v.indicator] }}</dt>
-                  <dd>{{ measurement(v.value, v.unit) }}</dd>
-                </template>
-                <dt>№ протокола</dt>
-                <dd>{{ a.protocolNumber || '—' }}</dd>
-                <dt>Ответственный</dt>
-                <dd>{{ a.responsibleEmployee || '—' }}</dd>
-                <dt>Метод</dt>
-                <dd>{{ a.method || '—' }}</dd>
-                <dt>Этап</dt>
-                <dd>{{ stageLabels[a.stage] }}</dd>
-              </dl>
-            </div>
-          </template>
-          <p v-else class="muted">Протоколов пока нет</p>
+        <p class="qr-apk__section">Происхождение</p>
+        <section class="qr-apk__card">
+          <h2 class="qr-apk__card-title">Происхождение</h2>
+          <div class="qr-apk__row">
+            <span>Источник образования партии</span>
+            <b>{{ originLabels[passport.batch.originType] }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Месторождение</span><b>{{ passport.batch.deposit || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Участок добычи</span><b>{{ passport.batch.miningSite || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Карьер</span><b>{{ passport.batch.quarry || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Смена / производственный период</span>
+            <b>{{ passport.batch.shiftPeriod || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Поставщик</span><b>{{ passport.batch.supplier || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Дата добычи или поступления</span>
+            <b>{{ fmtDate(passport.batch.minedAt) }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Партии-источники</span>
+            <b>{{ passport.batch.sourceBatchNumbers.join(', ') || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Штабели</span>
+            <b>{{ passport.batch.pileNumbers.join(', ') || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Места хранения</span>
+            <b>{{ passport.batch.storageLocations.join(', ') || '—' }}</b>
+          </div>
         </section>
+
+        <p class="qr-apk__section">Количественные показатели</p>
+        <section class="qr-apk__card">
+          <h2 class="qr-apk__card-title">Количественные показатели</h2>
+          <div class="qr-apk__row">
+            <span>Первоначальный вес, т</span><b>{{ fmt(passport.batch.initialWeight) }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Текущий остаток, т</span><b>{{ fmt(passport.batch.currentRemainder) }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Зарезервированный объем, т</span><b>{{ fmt(passport.batch.reservedVolume) }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Свободный объем, т</span><b>{{ fmt(passport.batch.freeVolume) }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Объем в переработке, т</span><b>{{ fmt(passport.batch.inProcessingVolume) }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Объем отгруженной продукции, т</span><b>{{ fmt(passport.batch.shippedVolume) }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Потери, т</span><b>{{ fmt(passport.batch.losses) }}</b>
+          </div>
+        </section>
+
+        <p class="qr-apk__section">История качества</p>
+        <template v-if="passport.quality.length">
+          <section v-for="(q, i) in passport.quality" :key="i" class="qr-apk__card">
+            <h2 class="qr-apk__card-title">
+              {{ fmtDate(q.analysisDate) }} · {{ stageLabels[q.stage] }}
+            </h2>
+            <div class="qr-apk__row">
+              <span>Зольность</span><b>{{ q.ash === null ? '—' : fmt(q.ash) + ' %' }}</b>
+            </div>
+            <div class="qr-apk__row">
+              <span>Влажность</span><b>{{ q.moisture === null ? '—' : fmt(q.moisture) + ' %' }}</b>
+            </div>
+            <div class="qr-apk__row">
+              <span>Калорийность</span><b>{{ q.calorific === null ? '—' : fmt(q.calorific) }}</b>
+            </div>
+          </section>
+        </template>
+        <p v-else class="qr-apk__muted">Замеров качества пока нет</p>
+
+        <p class="qr-apk__section">Результаты анализов</p>
+        <template v-if="passport.analyses.length">
+          <section v-for="a in passport.analyses" :key="a.id" class="qr-apk__card">
+            <h2 class="qr-apk__card-title">{{ a.sampleNumber }} · {{ a.labName }}</h2>
+            <div v-for="v in a.values" :key="v.indicator" class="qr-apk__row">
+              <span>{{ indicatorLabels[v.indicator] }}</span>
+              <b>{{ measurement(v.value, v.unit) }}</b>
+            </div>
+            <div class="qr-apk__row">
+              <span>№ протокола</span><b>{{ a.protocolNumber || '—' }}</b>
+            </div>
+            <div class="qr-apk__row">
+              <span>Ответственный</span><b>{{ a.responsibleEmployee || '—' }}</b>
+            </div>
+            <div class="qr-apk__row">
+              <span>Метод</span><b>{{ a.method || '—' }}</b>
+            </div>
+            <div class="qr-apk__row">
+              <span>Этап</span><b>{{ stageLabels[a.stage] }}</b>
+            </div>
+          </section>
+        </template>
+        <p v-else class="qr-apk__muted">Анализов пока нет</p>
       </template>
 
       <!-- Pile passport -->
-      <section v-else-if="passport.pile" class="panel qr-public__section">
-        <h2>Штабель</h2>
-        <dl class="kv">
-          <dt>Номер штабеля</dt>
-          <dd>{{ passport.pile.pileNumber }}</dd>
-          <dt>Статус</dt>
-          <dd>{{ pileStatusLabels[passport.pile.status] }}</dd>
-          <dt>Объем, т</dt>
-          <dd>{{ fmt(passport.pile.volume) }}</dd>
-          <dt>Склад</dt>
-          <dd>{{ passport.pile.warehouseNumber || '—' }}</dd>
-          <dt>Партии</dt>
-          <dd>{{ passport.pile.batchNumbers.join(', ') || '—' }}</dd>
-          <dt>Источник происхождения</dt>
-          <dd>{{ passport.pile.originSource || '—' }}</dd>
-          <dt>Дата</dt>
-          <dd>{{ fmtDate(passport.pile.createdAt) }}</dd>
-        </dl>
-      </section>
+      <template v-else-if="passport.pile">
+        <p class="qr-apk__section">Штабель</p>
+        <section class="qr-apk__card">
+          <h2 class="qr-apk__card-title">{{ passport.pile.pileNumber }}</h2>
+          <div class="qr-apk__row">
+            <span>Статус</span><b>{{ pileStatusLabels[passport.pile.status] }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Объем, т</span><b>{{ fmt(passport.pile.volume) }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Склад</span><b>{{ passport.pile.warehouseNumber || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Партии</span>
+            <b>{{ passport.pile.batchNumbers.join(', ') || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Источник происхождения</span>
+            <b>{{ passport.pile.originSource || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Дата</span><b>{{ fmtDate(passport.pile.createdAt) }}</b>
+          </div>
+        </section>
+      </template>
 
       <!-- Movement passport -->
-      <section v-else-if="passport.movement" class="panel qr-public__section">
-        <h2>Движение продукции</h2>
-        <dl class="kv">
-          <dt>Операция</dt>
-          <dd>{{ operationLabels[passport.movement.operation] }}</dd>
-          <dt>Объем, т</dt>
-          <dd>{{ fmt(passport.movement.volume) }}</dd>
-          <dt>Партия</dt>
-          <dd>{{ passport.movement.batchNumber || '—' }}</dd>
-          <dt>Штабель</dt>
-          <dd>{{ passport.movement.pileNumber || '—' }}</dd>
-          <dt>Откуда</dt>
-          <dd>{{ passport.movement.fromLocation || '—' }}</dd>
-          <dt>Куда</dt>
-          <dd>{{ passport.movement.toLocation || '—' }}</dd>
-          <dt>Дата</dt>
-          <dd>{{ fmtDate(passport.movement.createdAt) }}</dd>
-        </dl>
-      </section>
-
-      <p class="qr-public__img">
-        <img :src="qrImageUrl(type, id)" alt="QR-код" width="180" height="180" />
-      </p>
+      <template v-else-if="passport.movement">
+        <p class="qr-apk__section">Движение продукции</p>
+        <section class="qr-apk__card">
+          <h2 class="qr-apk__card-title">
+            {{ operationLabels[passport.movement.operation] }}
+          </h2>
+          <div class="qr-apk__row">
+            <span>Операция</span>
+            <b>{{ operationLabels[passport.movement.operation] }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Объем, т</span><b>{{ fmt(passport.movement.volume) }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Партия</span><b>{{ passport.movement.batchNumber || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Штабель</span><b>{{ passport.movement.pileNumber || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Откуда</span><b>{{ passport.movement.fromLocation || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Куда</span><b>{{ passport.movement.toLocation || '—' }}</b>
+          </div>
+          <div class="qr-apk__row">
+            <span>Дата</span><b>{{ fmtDate(passport.movement.createdAt) }}</b>
+          </div>
+        </section>
+      </template>
     </template>
 
-    <p v-else class="muted">Загрузка…</p>
+    <p v-else class="qr-apk__loading">Загрузка…</p>
   </div>
 </template>
 
 <style scoped>
-.qr-public {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+/* Mirrors the Android APK passport screen (row_section / row_card / row_kv).
+   Dark theme uses the APK palette verbatim; light theme swaps readable equivalents. */
+.qr-apk {
+  --apk-night: #050914;
+  --apk-panel: #0a1226;
+  --apk-edge: #1b2947;
+  --apk-ink: #e8eefb;
+  --apk-mute: #8b9bc0;
+  --apk-cyan: #22d3ee;
+  --apk-amber: #fbbf24;
+  --apk-green: #34d399;
+  --apk-red: #fb7185;
+
+  min-height: 100vh;
+  background: var(--apk-night);
+  padding: 0 16px 20px;
 }
 
-.qr-public__head {
-  margin-bottom: 1rem;
+:global(html[data-theme='light']) .qr-apk {
+  --apk-night: #f4f6fb;
+  --apk-panel: #ffffff;
+  --apk-edge: rgba(16, 24, 40, 0.12);
+  --apk-ink: #101828;
+  --apk-mute: #5b6b8c;
+  --apk-cyan: #0891b2;
+  --apk-amber: #b45309;
+  --apk-green: #047857;
+  --apk-red: #be123c;
 }
 
-.qr-public__head h1 {
+.qr-apk__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0 8px;
+}
+
+.qr-apk__bar-action {
+  color: var(--apk-cyan);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.qr-apk__bar-title {
+  color: var(--apk-mute);
+  font-size: 13px;
+}
+
+.qr-apk__section {
   margin: 0;
-}
-
-.qr-public__section {
-  margin-bottom: 1rem;
-}
-
-.qr-public__section h2 {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-}
-
-.qr-public__card {
-  border: 1px solid var(--color-line);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.qr-public__card-title {
-  margin: 0 0 0.5rem;
+  padding: 20px 4px 8px;
+  color: var(--apk-cyan);
+  font-size: 12px;
   font-weight: 700;
 }
 
-.qr-public__img {
-  text-align: center;
+.qr-apk__card {
+  margin-bottom: 10px;
+  padding: 4px 14px 10px;
+  border: 1px solid var(--apk-edge);
+  border-radius: 14px;
+  background: var(--apk-panel);
 }
 
-/* ---------- mobile: phones open this page by scanning the QR ----------
-   The desktop .kv uses a fixed 250px label column, which overflows narrow
-   screens; stack label over value and let long values wrap instead. */
-@media (max-width: 640px) {
-  .qr-public {
-    padding: 1rem 0.75rem 2.5rem;
-  }
+.qr-apk__card-title {
+  margin: 0;
+  padding: 10px 0 2px;
+  color: var(--apk-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
 
-  .qr-public__head h1 {
-    font-size: 1.25rem;
-  }
+.qr-apk__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 7px 0;
+}
 
-  .qr-public .kv {
-    grid-template-columns: 1fr;
-    gap: 0.1rem;
-    padding: 0.85rem 0.9rem;
-    font-size: 0.85rem;
-  }
+.qr-apk__row span {
+  flex: 1 1 50%;
+  color: var(--apk-mute);
+  font-size: 13px;
+}
 
-  .qr-public .kv dt {
-    margin-top: 0.5rem;
-    font-size: 0.72rem;
-    letter-spacing: 0.02em;
-  }
+.qr-apk__row b {
+  flex: 1 1 50%;
+  color: var(--apk-ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
 
-  .qr-public .kv dt:first-child {
-    margin-top: 0;
-  }
+.qr-apk__value--cyan {
+  color: var(--apk-cyan) !important;
+}
 
-  .qr-public .kv dd {
-    overflow-wrap: anywhere;
-  }
+.qr-apk__value--amber {
+  color: var(--apk-amber) !important;
+}
 
-  .qr-public table {
-    font-size: 0.78rem;
-  }
+.qr-apk__value--green {
+  color: var(--apk-green) !important;
+}
 
-  .qr-public thead th {
-    padding: 0.45rem 0.5rem;
-    white-space: normal;
-  }
+.qr-apk__value--mute {
+  color: var(--apk-mute) !important;
+}
 
-  .qr-public tbody td {
-    padding: 0.5rem;
-    overflow-wrap: anywhere;
-  }
+.qr-apk__muted,
+.qr-apk__loading {
+  padding: 12px;
+  color: var(--apk-mute);
+  font-size: 13px;
+}
 
-  .qr-public__card {
-    padding: 0.6rem 0.7rem;
-  }
+.qr-apk__loading {
+  padding-top: 40px;
+  text-align: center;
+  font-size: 14px;
+}
 
-  .qr-public__img img {
-    width: 140px;
-    height: 140px;
-  }
+.qr-apk__error {
+  padding: 0 20px;
+  color: var(--apk-red);
+  font-size: 14px;
 }
 </style>
