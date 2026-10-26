@@ -143,6 +143,27 @@ export interface PileTransferRequest {
   toWarehouseId: string
 }
 
+export type LineageNodeType = 'pile' | 'batch'
+
+/** One box in the pile provenance graph. */
+export interface LineageNodeDto {
+  id: string
+  type: LineageNodeType
+  label: string
+  current: boolean
+}
+
+/** Directed material flow: batch→pile (accepted into) or pile→batch (split produced). */
+export interface LineageEdgeDto {
+  from: string
+  to: string
+}
+
+export interface PileLineageDto {
+  nodes: LineageNodeDto[]
+  edges: LineageEdgeDto[]
+}
+
 export interface MovementDto {
   id: string
   batchId: string | null

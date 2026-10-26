@@ -15,6 +15,7 @@ import type {
   PileCreateRequest,
   PileDto,
   PileAcceptBatchRequest,
+  PileLineageDto,
   PileMergeRequest,
   PileSplitRequest,
   PileTransferRequest,
@@ -51,6 +52,7 @@ export const pilesApi = {
   get: (id: string) => http.get<PileDto>(`/piles/${id}`).then(r => r.data),
   create: (req: PileCreateRequest) => http.post<PileDto>('/piles', req).then(r => r.data),
   history: (id: string) => http.get<MovementDto[]>(`/piles/${id}/history`).then(r => r.data),
+  lineage: (id: string) => http.get<PileLineageDto>(`/piles/${id}/lineage`).then(r => r.data),
   split: (id: string, req: PileSplitRequest) =>
     http.post<PileDto>(`/piles/${id}/split`, req).then(r => r.data),
   merge: (req: PileMergeRequest) => http.post<PileDto>('/piles/merge', req).then(r => r.data),

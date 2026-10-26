@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import { batchesApi, pilesApi, warehousesApi } from "@/api/coal";
-import type { BatchDto, MovementDto, OptionDto, PileDto } from "@/api/types";
+import type {
+  BatchDto,
+  MovementDto,
+  OptionDto,
+  PileDto,
+  PileLineageDto,
+} from "@/api/types";
 import {
   errMsg,
   fmt,
@@ -11,6 +17,7 @@ import {
 } from "@/lib/format";
 import BatchChips from "@/components/BatchChips.vue";
 import DecimalInput from "@/components/DecimalInput.vue";
+import LineageGraph from "@/components/LineageGraph.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
@@ -43,6 +50,11 @@ const mergeMode = ref(false);
 const transferTarget = ref<PileDto | null>(null);
 const historyTarget = ref<PileDto | null>(null);
 const history = ref<MovementDto[]>([]);
+// The history modal has two switchable pages: the movements table and the
+// provenance graph; the graph payload is fetched lazily on first switch.
+const historyView = ref<"list" | "graph">("list");
+const lineage = ref<PileLineageDto | null>(null);
+const lineageLoading = ref(false);
 // The parties chip + popover now live in the shared <BatchChips> component,
 // reused by the warehouses page; no local popover state is needed here.
 
@@ -149,11 +161,27 @@ async function submitAccept() {
 
 async function openHistory(h: PileDto) {
   historyTarget.value = h;
+  historyView.value = "list";
+  lineage.value = null;
   try {
     history.value = await pilesApi.history(h.id);
   } catch (e) {
     historyTarget.value = null;
     notifyError(errMsg(e));
+  }
+}
+
+async function showGraph() {
+  historyView.value = "graph";
+  if (lineage.value || !historyTarget.value) return;
+  lineageLoading.value = true;
+  try {
+    lineage.value = await pilesApi.lineage(historyTarget.value.id);
+  } catch (e) {
+    historyView.value = "list";
+    notifyError(errMsg(e));
+  } finally {
+    lineageLoading.value = false;
   }
 }
 
@@ -298,7 +326,8 @@ onMounted(() => {
                 <button class="secondary" @click="openTransfer(h)">
                   Трансфер
                 </button>
-              </td>            </tr>
+              </td>
+            </tr>
             <tr v-if="!rows.length">
               <td colspan="8" class="muted">Штабелей пока нет</td>
             </tr>
@@ -503,7 +532,26 @@ onMounted(() => {
       :title="`История штабеля ${historyTarget.pileNumber}`"
       @close="historyTarget = null"
     >
-      <div class="overflow-x-auto">
+      <div class="seg mb-4">
+        <button
+          type="button"
+          :class="{ active: historyView === 'list' }"
+          @click="historyView = 'list'"
+          class="text-white"
+        >
+          Движения
+        </button>
+        <button
+          type="button"
+          :class="{ active: historyView === 'graph' }"
+          @click="showGraph"
+          class="text-white"
+        >
+          Граф происхождения
+        </button>
+      </div>
+
+      <div v-if="historyView === 'list'" class="overflow-x-auto">
         <table>
           <thead>
             <tr>
@@ -528,6 +576,14 @@ onMounted(() => {
           </tbody>
         </table>
       </div>
+      <div v-else>
+        <p v-if="lineageLoading" class="muted">Загрузка графа…</p>
+        <LineageGraph
+          v-else-if="lineage"
+          :nodes="lineage.nodes"
+          :edges="lineage.edges"
+        />
+      </div>
       <div class="actions">
         <button class="secondary" @click="historyTarget = null">Закрыть</button>
       </div>
@@ -535,3 +591,34 @@ onMounted(() => {
   </div>
 </template>
 
+<style scoped>
+/* Segmented switch between the movements table and the provenance graph. */
+.seg {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: rgba(5, 9, 20, 0.4);
+}
+.seg button {
+  border: none;
+  background: transparent;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.seg button:hover {
+  color: var(--color-ink);
+}
+.seg button.active {
+  background: rgba(96, 165, 250, 0.16);
+  color: #fff;
+}
+</style>
