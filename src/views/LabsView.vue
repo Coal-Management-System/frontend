@@ -104,6 +104,10 @@ function addRow() {
   form.values.push({ indicator: "ASH", value: null, unit: "%" });
 }
 
+function removeRow(index: number) {
+  form.values.splice(index, 1);
+}
+
 async function submitLab() {
   saving.value = true;
   try {
@@ -345,6 +349,11 @@ onMounted(() => {
           Единица
           <input v-model="v.unit" placeholder="% , ккал/кг…" />
         </label>
+        <div class="self-end">
+          <button type="button" class="secondary value-del" @click="removeRow(i)">
+            Удалить
+          </button>
+        </div>
       </div>
       <button class="secondary mt-2" @click="addRow">+ показатель</button>
 
@@ -355,3 +364,12 @@ onMounted(() => {
     </Modal>
   </div>
 </template>
+
+<style scoped lang="scss">
+/* Per-indicator delete control: sits in the value row's last grid cell and
+   reads as a destructive action rather than a normal secondary button. */
+.value-del {
+  color: var(--color-neon-red);
+  border-color: color-mix(in srgb, var(--color-neon-red) 40%, transparent);
+}
+</style>
