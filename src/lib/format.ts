@@ -14,7 +14,8 @@ export const batchStatusLabels: Record<BatchStatus, string> = {
   NEW: 'Новая',
   IN_PROCESSING: 'В переработке',
   READY_FOR_SHIPMENT: 'Готова к отгрузке',
-  SHIPPED: 'Отгружена'
+  SHIPPED: 'Отгружена',
+  ARCHIVED: 'В архиве'
 }
 
 export const originLabels: Record<OriginType, string> = {

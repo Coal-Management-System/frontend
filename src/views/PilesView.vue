@@ -40,6 +40,8 @@ const {
 // Dropdowns read the unpaged /options endpoints, otherwise they would truncate at 10 rows.
 const warehouseOptions = ref<OptionDto[]>([]);
 const batchOptions = ref<OptionDto[]>([]);
+// Parties that still have unaccepted volume — the only ones offerable to a pile.
+const acceptBatchOptions = ref<OptionDto[]>([]);
 const pileOptions = ref<OptionDto[]>([]);
 const saving = ref(false);
 const PILE_PREFIX = "Шт-";
@@ -83,12 +85,17 @@ const acceptBatchLoading = ref(false);
 
 async function loadOptions() {
   try {
-    [warehouseOptions.value, batchOptions.value, pileOptions.value] =
-      await Promise.all([
-        warehousesApi.options(),
-        batchesApi.options(),
-        pilesApi.options(),
-      ]);
+    [
+      warehouseOptions.value,
+      batchOptions.value,
+      acceptBatchOptions.value,
+      pileOptions.value,
+    ] = await Promise.all([
+      warehousesApi.options(),
+      batchesApi.options(),
+      batchesApi.options(true),
+      pilesApi.options(),
+    ]);
   } catch (e) {
     notifyError(errMsg(e));
   }
@@ -114,12 +121,6 @@ function openAccept(h: PileDto) {
   acceptBatch.value = null;
 }
 
-// Parties already inside the pile cannot be accepted twice; the option is
-// disabled and annotated so the reason is visible without hitting the backend.
-function isLinked(batchId: string): boolean {
-  return acceptTarget.value?.batchIds.includes(batchId) ?? false;
-}
-
 async function onAcceptBatchChange() {
   acceptBatch.value = null;
   acceptForm.volume = null;
@@ -130,7 +131,7 @@ async function onAcceptBatchChange() {
     // Ignore a late response if the user already picked another party.
     if (acceptForm.batchId !== batch.id) return;
     acceptBatch.value = batch;
-    acceptForm.volume = batch.freeVolume;
+    acceptForm.volume = batch.remainingVolume;
   } catch (e) {
     notifyError(errMsg(e));
   } finally {
@@ -470,13 +471,8 @@ onMounted(() => {
           Партия
           <select v-model="acceptForm.batchId" @change="onAcceptBatchChange">
             <option value="" disabled>Выберите партию</option>
-            <option
-              v-for="o in batchOptions"
-              :key="o.id"
-              :value="o.id"
-              :disabled="isLinked(o.id)"
-            >
-              {{ o.label }}{{ isLinked(o.id) ? " — уже в штабеле" : "" }}
+            <option v-for="o in acceptBatchOptions" :key="o.id" :value="o.id">
+              {{ o.label }}
             </option>
           </select>
         </label>
@@ -487,16 +483,18 @@ onMounted(() => {
       </div>
       <p v-if="acceptBatchLoading" class="muted">Загрузка остатка партии…</p>
       <p v-else-if="acceptBatch" class="muted">
-        Свободный остаток партии {{ acceptBatch.batchNumber }}:
-        {{ fmt(acceptBatch.freeVolume) }} т — подставлен в объем, можно
-        уменьшить.
+        Остаток партии {{ acceptBatch.batchNumber }}:
+        {{ fmt(acceptBatch.remainingVolume) }} т — подставлен в объем, можно
+        уменьшить, чтобы принять только часть.
       </p>
       <p v-else class="muted">
-        Выберите партию — её свободный остаток подставится в объем
-        автоматически.
+        Выберите партию — её остаток подставится в объем автоматически. Партию
+        можно принимать частями, в том числе повторно в этот же штабель.
       </p>
       <p class="muted">
-        Объем штабеля увеличится на указанный; размер партии не меняется.
+        Объем штабеля увеличится на принятую часть; остаток партии уменьшится.
+        Когда остаток достигнет нуля, партия перейдет в статус «В архиве» и
+        исчезнет из списка доступных.
       </p>
       <div class="actions">
         <button class="secondary" @click="acceptTarget = null">Отмена</button>

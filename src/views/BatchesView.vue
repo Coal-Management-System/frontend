@@ -187,7 +187,7 @@ onMounted(() => {
                 или поставщик
               </th>
               <th>Дата добычи или поступления</th>
-              <th>Текущий объем, т</th>
+              <th>Остаток партии, т</th>
               <th>Место хранения</th>
               <th>Статус партии</th>
               <th>Общая информация</th>
@@ -199,7 +199,7 @@ onMounted(() => {
               <td>{{ originLabels[b.originType] }}</td>
               <td>{{ originOf(b) }}</td>
               <td>{{ fmtDate(b.minedAt) }}</td>
-              <td>{{ fmt(b.currentRemainder) }}</td>
+              <td>{{ fmt(b.remainingVolume) }}</td>
               <td>{{ b.storageLocations.join(", ") || "—" }}</td>
               <td>{{ batchStatusLabels[b.status] }}</td>
               <td>

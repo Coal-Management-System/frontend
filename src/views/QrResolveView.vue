@@ -36,7 +36,7 @@ function measurement(value: number | null | undefined, unit: string | null | und
   return unit ? `${fmt(value)} ${unit}` : fmt(value)
 }
 
-/** Mirrors the APK statusColor(): NEW cyan, IN_PROCESSING amber, READY green, SHIPPED mute. */
+/** Mirrors the APK statusColor(): NEW cyan, IN_PROCESSING amber, READY green, SHIPPED/ARCHIVED mute. */
 function statusClass(status: string | null | undefined): string {
   switch (status) {
     case 'NEW':
@@ -46,6 +46,7 @@ function statusClass(status: string | null | undefined): string {
     case 'READY_FOR_SHIPMENT':
       return 'qr-apk__value--green'
     case 'SHIPPED':
+    case 'ARCHIVED':
       return 'qr-apk__value--mute'
     default:
       return ''

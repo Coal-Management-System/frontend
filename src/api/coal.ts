@@ -31,7 +31,10 @@ import type {
 export const batchesApi = {
   list: (query: PageQuery = {}) =>
     http.get<Page<BatchDto>>('/batches', { params: query }).then(r => r.data),
-  options: () => http.get<OptionDto[]>('/batches/options').then(r => r.data),
+  options: (availableOnly = false) =>
+    http
+      .get<OptionDto[]>('/batches/options', { params: availableOnly ? { availableOnly: true } : {} })
+      .then(r => r.data),
   get: (id: string) => http.get<BatchDto>(`/batches/${id}`).then(r => r.data),
   create: (req: BatchCreateRequest) => http.post<BatchDto>('/batches', req).then(r => r.data),
   update: (id: string, req: BatchUpdateRequest) =>

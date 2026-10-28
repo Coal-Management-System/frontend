@@ -1,4 +1,4 @@
-export type BatchStatus = 'NEW' | 'IN_PROCESSING' | 'READY_FOR_SHIPMENT' | 'SHIPPED'
+export type BatchStatus = 'NEW' | 'IN_PROCESSING' | 'READY_FOR_SHIPMENT' | 'SHIPPED' | 'ARCHIVED'
 export type OriginType = 'OWN_MINING' | 'PURCHASED'
 export type PileStatus = 'ACTIVE' | 'SPLIT' | 'MERGED' | 'TRANSFERRED' | 'EMPTY'
 export type MovementOperation = 'PILE_CREATED' | 'PILE_MERGED' | 'PILE_SPLIT' | 'PILE_TRANSFERRED' | 'BATCH_ACCEPTED_INTO_PILE'
@@ -54,6 +54,8 @@ export interface BatchDto {
   losses: number
   currentRemainder: number
   freeVolume: number
+  acceptedVolume: number
+  remainingVolume: number
   storageLocations: string[]
   sourceBatchIds: string[]
   sourceBatchNumbers: string[]
