@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { batchesApi } from "@/api/coal";
-import type { BatchCreateRequest, BatchDto } from "@/api/types";
+import { batchesApi, dictionaryApi } from "@/api/coal";
+import type {
+  BatchCreateRequest,
+  BatchDto,
+  DictionaryField,
+  DictionaryMap,
+} from "@/api/types";
 import {
   batchStatusLabels,
   errMsg,
@@ -12,6 +17,7 @@ import {
 } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
 import DateTimePicker from "@/components/DateTimePicker.vue";
+import AutocompleteInput from "@/components/AutocompleteInput.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
@@ -33,6 +39,47 @@ const {
 const showCreate = ref(false);
 const saving = ref(false);
 const BATCH_PREFIX = "П-";
+
+// Shared vocabulary behind the seven free-text fields, loaded once on open.
+const dict = reactive<DictionaryMap>({
+  PRODUCT_TYPE: [],
+  COAL_GRADE: [],
+  FRACTION: [],
+  QUARRY: [],
+  DEPOSIT: [],
+  MINING_SITE: [],
+  SUPPLIER: [],
+});
+const addingField = ref<DictionaryField | null>(null);
+
+async function loadDict() {
+  try {
+    const data = await dictionaryApi.list();
+    Object.assign(dict, data);
+  } catch (e) {
+    // A failed dictionary load only means no suggestions; typing still works.
+    notifyError(errMsg(e));
+  }
+}
+
+// Persist a newly-typed word, then keep it available locally right away.
+async function addWord(field: DictionaryField, value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return;
+  addingField.value = field;
+  try {
+    await dictionaryApi.add(field, trimmed);
+    if (!dict[field].some((v) => v.toLowerCase() === trimmed.toLowerCase())) {
+      dict[field] = [...dict[field], trimmed].sort((a, b) =>
+        a.localeCompare(b),
+      );
+    }
+  } catch (e) {
+    notifyError(errMsg(e));
+  } finally {
+    addingField.value = null;
+  }
+}
 
 const form = reactive<
   Omit<BatchCreateRequest, "initialWeight"> & {
@@ -112,7 +159,10 @@ function resetForm() {
   });
 }
 
-onMounted(load);
+onMounted(() => {
+  load();
+  loadDict();
+});
 </script>
 
 <template>
@@ -198,15 +248,30 @@ onMounted(load);
         </label>
         <label>
           Тип продукции
-          <input v-model="form.productType" />
+          <AutocompleteInput
+            v-model="form.productType"
+            :options="dict.PRODUCT_TYPE"
+            :busy="addingField === 'PRODUCT_TYPE'"
+            @add-new="addWord('PRODUCT_TYPE', $event)"
+          />
         </label>
         <label>
           Марка угля
-          <input v-model="form.coalGrade" />
+          <AutocompleteInput
+            v-model="form.coalGrade"
+            :options="dict.COAL_GRADE"
+            :busy="addingField === 'COAL_GRADE'"
+            @add-new="addWord('COAL_GRADE', $event)"
+          />
         </label>
         <label>
           Фракция
-          <input v-model="form.fraction" />
+          <AutocompleteInput
+            v-model="form.fraction"
+            :options="dict.FRACTION"
+            :busy="addingField === 'FRACTION'"
+            @add-new="addWord('FRACTION', $event)"
+          />
         </label>
         <label>
           Источник происхождения
@@ -221,15 +286,30 @@ onMounted(load);
         </label>
         <label>
           Месторождение
-          <input v-model="form.deposit" />
+          <AutocompleteInput
+            v-model="form.deposit"
+            :options="dict.DEPOSIT"
+            :busy="addingField === 'DEPOSIT'"
+            @add-new="addWord('DEPOSIT', $event)"
+          />
         </label>
         <label>
           Участок добычи
-          <input v-model="form.miningSite" />
+          <AutocompleteInput
+            v-model="form.miningSite"
+            :options="dict.MINING_SITE"
+            :busy="addingField === 'MINING_SITE'"
+            @add-new="addWord('MINING_SITE', $event)"
+          />
         </label>
         <label>
           Карьер
-          <input v-model="form.quarry" />
+          <AutocompleteInput
+            v-model="form.quarry"
+            :options="dict.QUARRY"
+            :busy="addingField === 'QUARRY'"
+            @add-new="addWord('QUARRY', $event)"
+          />
         </label>
         <label>
           Смена / производственный период
@@ -237,7 +317,12 @@ onMounted(load);
         </label>
         <label>
           Поставщик (если уголь закупной)
-          <input v-model="form.supplier" />
+          <AutocompleteInput
+            v-model="form.supplier"
+            :options="dict.SUPPLIER"
+            :busy="addingField === 'SUPPLIER'"
+            @add-new="addWord('SUPPLIER', $event)"
+          />
         </label>
         <label>
           Дата добычи / поступления

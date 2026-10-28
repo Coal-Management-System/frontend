@@ -6,6 +6,9 @@ import type {
   BatchDto,
   BatchUpdateRequest,
   DashboardDto,
+  DictionaryEntryDto,
+  DictionaryField,
+  DictionaryMap,
   LabDto,
   MovementCreateRequest,
   MovementDto,
@@ -89,6 +92,14 @@ export const warehousesApi = {
 
 export const dashboardApi = {
   get: () => http.get<DashboardDto>('/dashboard').then(r => r.data)
+}
+
+// Shared vocabulary for the batch free-text fields (product type, coal grade,
+// fraction, quarry, deposit, mining site, supplier).
+export const dictionaryApi = {
+  list: () => http.get<DictionaryMap>('/dictionary').then(r => r.data),
+  add: (field: DictionaryField, value: string) =>
+    http.post<DictionaryEntryDto>('/dictionary', { field, value }).then(r => r.data)
 }
 
 export const qrImageUrl = (type: 'batch' | 'pile' | 'movement', id: string) =>

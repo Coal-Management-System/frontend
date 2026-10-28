@@ -7,6 +7,7 @@ import LoginView from '@/views/LoginView.vue'
 import WarehousesView from '@/views/WarehousesView.vue'
 import PilesView from '@/views/PilesView.vue'
 import MovementsView from '@/views/MovementsView.vue'
+import DictionaryView from '@/views/DictionaryView.vue'
 import QrView from '@/views/QrView.vue'
 import QrResolveView from '@/views/QrResolveView.vue'
 import { getToken } from '@/lib/session'
@@ -23,6 +24,7 @@ const router = createRouter({
     { path: '/warehouses', name: 'warehouses', component: WarehousesView },
     { path: '/piles', name: 'piles', component: PilesView },
     { path: '/movements', name: 'movements', component: MovementsView },
+    { path: '/dictionary', name: 'dictionary', component: DictionaryView },
     { path: '/qr', name: 'qr', component: QrView },
     { path: '/qr/:type/:id', name: 'qr-resolve', component: QrResolveView, meta: { public: true } }
   ]

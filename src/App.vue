@@ -64,6 +64,11 @@ const nav = [
     icon: 'M7 8.5h11m0 0l-3-3m3 3l-3 3M17 15.5H6m0 0l3-3m-3 3l3 3'
   },
   {
+    to: '/dictionary',
+    label: 'Словари',
+    icon: 'M5 4.5h9.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2zM5 4.5A1.5 1.5 0 0 0 6.5 6H16M9 10h5M9 13h5'
+  },
+  {
     to: '/qr',
     label: 'QR-кодирование',
     icon: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2.5v2.5H14zM17.5 17.5H20V20h-2.5z'

@@ -294,3 +294,20 @@ export interface LoginResponse {
   token: string
   user: AuthUserDto
 }
+
+export type DictionaryField =
+  | 'PRODUCT_TYPE'
+  | 'COAL_GRADE'
+  | 'FRACTION'
+  | 'QUARRY'
+  | 'DEPOSIT'
+  | 'MINING_SITE'
+  | 'SUPPLIER'
+
+/** Every field's vocabulary, keyed by field name. */
+export type DictionaryMap = Record<DictionaryField, string[]>
+
+export interface DictionaryEntryDto {
+  field: DictionaryField
+  value: string
+}
