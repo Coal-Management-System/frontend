@@ -65,13 +65,27 @@ export const pilesApi = {
   acceptBatch: (id: string, req: PileAcceptBatchRequest) =>
     http.post<PileDto>(`/piles/${id}/accept-batch`, req).then(r => r.data),
   transfer: (id: string, req: PileTransferRequest) =>
-    http.post<PileDto>(`/piles/${id}/transfer`, req).then(r => r.data)
+    http.post<PileDto>(`/piles/${id}/transfer`, req).then(r => r.data),
+  remove: (id: string, adminKey: string, confirmNumber: string) =>
+    http
+      .delete<void>(`/piles/${id}`, {
+        headers: { 'X-Admin-Key': adminKey },
+        params: { confirmNumber }
+      })
+      .then(() => undefined)
 }
 
 export const movementsApi = {
   list: (query: PageQuery = {}) =>
     http.get<Page<MovementDto>>('/movements', { params: query }).then(r => r.data),
-  create: (req: MovementCreateRequest) => http.post<MovementDto>('/movements', req).then(r => r.data)
+  create: (req: MovementCreateRequest) => http.post<MovementDto>('/movements', req).then(r => r.data),
+  remove: (id: string, adminKey: string, confirmOperation: string) =>
+    http
+      .delete<void>(`/movements/${id}`, {
+        headers: { 'X-Admin-Key': adminKey },
+        params: { confirmOperation }
+      })
+      .then(() => undefined)
 }
 
 export const labsApi = {
@@ -79,10 +93,24 @@ export const labsApi = {
     http.get<Page<LabDto>>('/labs', { params: query }).then(r => r.data),
   options: () => http.get<OptionDto[]>('/labs/options').then(r => r.data),
   createLab: (name: string) => http.post<LabDto>('/labs', { name }).then(r => r.data),
+  removeLab: (id: string, adminKey: string, confirmName: string) =>
+    http
+      .delete<void>(`/labs/${id}`, {
+        headers: { 'X-Admin-Key': adminKey },
+        params: { confirmName }
+      })
+      .then(() => undefined),
   analyses: (query: PageQuery = {}) =>
     http.get<Page<AnalysisDto>>('/lab-analyses', { params: query }).then(r => r.data),
   createAnalysis: (req: AnalysisCreateRequest) =>
-    http.post<AnalysisDto>('/lab-analyses', req).then(r => r.data)
+    http.post<AnalysisDto>('/lab-analyses', req).then(r => r.data),
+  removeAnalysis: (id: string, adminKey: string, confirmNumber: string) =>
+    http
+      .delete<void>(`/lab-analyses/${id}`, {
+        headers: { 'X-Admin-Key': adminKey },
+        params: { confirmNumber }
+      })
+      .then(() => undefined)
 }
 
 export const warehousesApi = {
@@ -90,7 +118,14 @@ export const warehousesApi = {
     http.get<Page<WarehouseDto>>('/warehouses', { params: query }).then(r => r.data),
   options: () => http.get<OptionDto[]>('/warehouses/options').then(r => r.data),
   create: (req: WarehouseCreateRequest) => http.post<WarehouseDto>('/warehouses', req).then(r => r.data),
-  piles: (id: string) => http.get<PileDto[]>(`/warehouses/${id}/piles`).then(r => r.data)
+  piles: (id: string) => http.get<PileDto[]>(`/warehouses/${id}/piles`).then(r => r.data),
+  remove: (id: string, adminKey: string, confirmNumber: string) =>
+    http
+      .delete<void>(`/warehouses/${id}`, {
+        headers: { 'X-Admin-Key': adminKey },
+        params: { confirmNumber }
+      })
+      .then(() => undefined)
 }
 
 export const dashboardApi = {
@@ -102,7 +137,14 @@ export const dashboardApi = {
 export const dictionaryApi = {
   list: () => http.get<DictionaryMap>('/dictionary').then(r => r.data),
   add: (field: DictionaryField, value: string) =>
-    http.post<DictionaryEntryDto>('/dictionary', { field, value }).then(r => r.data)
+    http.post<DictionaryEntryDto>('/dictionary', { field, value }).then(r => r.data),
+  remove: (field: DictionaryField, value: string, adminKey: string, confirmValue: string) =>
+    http
+      .delete<void>(`/dictionary/${field}`, {
+        headers: { 'X-Admin-Key': adminKey },
+        params: { value, confirmValue }
+      })
+      .then(() => undefined)
 }
 
 export const qrImageUrl = (type: 'batch' | 'pile' | 'movement', id: string) =>

@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from "vue";
 import { batchesApi, pilesApi, movementsApi, qrImageUrl } from "@/api/coal";
 import type { MovementCreateRequest, MovementDto, OptionDto } from "@/api/types";
 import { errMsg, fmt, fmtDate, operationLabels } from "@/lib/format";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal.vue";
 import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
@@ -28,6 +29,29 @@ const pileOptions = ref<OptionDto[]>([]);
 const showCreate = ref(false);
 const saving = ref(false);
 const qrTarget = ref<MovementDto | null>(null);
+
+// Destructive delete. A movement has no unique name, so the confirmation word
+// is its operation code (e.g. SHIPMENT), matching the backend check.
+const deleteTarget = ref<MovementDto | null>(null);
+const deleting = ref(false);
+
+function openDelete(m: MovementDto) {
+  deleteTarget.value = m;
+}
+
+async function confirmDelete(adminKey: string, text: string) {
+  if (!deleteTarget.value) return;
+  deleting.value = true;
+  try {
+    await movementsApi.remove(deleteTarget.value.id, adminKey, text);
+    deleteTarget.value = null;
+    await load();
+  } catch (e) {
+    notifyError(errMsg(e));
+  } finally {
+    deleting.value = false;
+  }
+}
 
 const form = reactive<
   Omit<MovementCreateRequest, "volume"> & {
@@ -102,7 +126,7 @@ onMounted(() => {
               <th>Откуда</th>
               <th>Куда</th>
               <th>Дата</th>
-              <th>QR-Code</th>
+              <th>Действия</th>
             </tr>
           </thead>
           <tbody>
@@ -115,9 +139,12 @@ onMounted(() => {
               <td>{{ m.toLocation || "—" }}</td>
               <td>{{ fmtDate(m.createdAt) }}</td>
               <td>
-                <button class="secondary" @click="qrTarget = m">
-                  Показать
-                </button>
+                <div class="flex gap-2 items-center">
+                  <button class="secondary" @click="qrTarget = m">
+                    QR-Code
+                  </button>
+                  <button class="danger" @click="openDelete(m)">Удалить</button>
+                </div>
               </td>
             </tr>
             <tr v-if="!rows.length">
@@ -226,5 +253,16 @@ onMounted(() => {
         <button :disabled="saving" @click="submit">Добавить</button>
       </div>
     </Modal>
+
+    <ConfirmDeleteModal
+      v-if="deleteTarget"
+      :title="`Удаление движения · ${operationLabels[deleteTarget.operation]}`"
+      :confirm-label="deleteTarget.operation"
+      :confirm-prompt="`Введите код операции «${deleteTarget.operation}» для подтверждения`"
+      :busy="deleting"
+      warning="Движение будет удалено безвозвратно. Если это приём партии в штабель, удалённый объём вернётся в остаток партии."
+      @close="deleteTarget = null"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>

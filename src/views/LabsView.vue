@@ -12,6 +12,7 @@ import { errMsg, fmtDate, indicatorLabels, stageLabels } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
 import DateTimePicker from "@/components/DateTimePicker.vue";
 import AutocompleteInput from "@/components/AutocompleteInput.vue";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
@@ -63,6 +64,47 @@ const showAnalysis = ref(false);
 const saving = ref(false);
 const labName = ref("");
 const SAMPLE_PREFIX = "Пр-";
+
+// Destructive deletes, one target each for the two lists on this page.
+const labDeleteTarget = ref<LabDto | null>(null);
+const analysisDeleteTarget = ref<AnalysisDto | null>(null);
+const deleting = ref(false);
+
+function openDeleteLab(l: LabDto) {
+  labDeleteTarget.value = l;
+}
+
+async function confirmDeleteLab(adminKey: string, text: string) {
+  if (!labDeleteTarget.value) return;
+  deleting.value = true;
+  try {
+    await labsApi.removeLab(labDeleteTarget.value.id, adminKey, text);
+    labDeleteTarget.value = null;
+    await Promise.all([loadLabs(), loadOptions()]);
+  } catch (e) {
+    notifyError(errMsg(e));
+  } finally {
+    deleting.value = false;
+  }
+}
+
+function openDeleteAnalysis(a: AnalysisDto) {
+  analysisDeleteTarget.value = a;
+}
+
+async function confirmDeleteAnalysis(adminKey: string, text: string) {
+  if (!analysisDeleteTarget.value) return;
+  deleting.value = true;
+  try {
+    await labsApi.removeAnalysis(analysisDeleteTarget.value.id, adminKey, text);
+    analysisDeleteTarget.value = null;
+    await loadAnalyses();
+  } catch (e) {
+    notifyError(errMsg(e));
+  } finally {
+    deleting.value = false;
+  }
+}
 
 const indicators = Object.keys(indicatorLabels) as Indicator[];
 
@@ -222,14 +264,18 @@ onMounted(() => {
           <thead>
             <tr>
               <th>Название</th>
+              <th>Действия</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="l in labs" :key="l.id" class="hover:cursor-pointer">
               <td>{{ l.name }}</td>
+              <td>
+                <button class="danger" @click="openDeleteLab(l)">Удалить</button>
+              </td>
             </tr>
             <tr v-if="!labs.length">
-              <td class="muted">Лабораторий пока нет</td>
+              <td colspan="2" class="muted">Лабораторий пока нет</td>
             </tr>
           </tbody>
         </table>
@@ -257,6 +303,7 @@ onMounted(() => {
               <th>Результаты</th>
               <th>Этап</th>
               <th>Дата</th>
+              <th>Действия</th>
             </tr>
           </thead>
           <tbody>
@@ -271,9 +318,14 @@ onMounted(() => {
               </td>
               <td>{{ stageLabels[a.stage] }}</td>
               <td>{{ fmtDate(a.analysisDate) }}</td>
+              <td>
+                <button class="danger" @click="openDeleteAnalysis(a)">
+                  Удалить
+                </button>
+              </td>
             </tr>
             <tr v-if="!analyses.length">
-              <td colspan="5" class="muted">Результатов пока нет</td>
+              <td colspan="6" class="muted">Результатов пока нет</td>
             </tr>
           </tbody>
         </table>
@@ -403,6 +455,28 @@ onMounted(() => {
         <button :disabled="saving" @click="submitAnalysis">Добавить</button>
       </div>
     </Modal>
+
+    <ConfirmDeleteModal
+      v-if="labDeleteTarget"
+      :title="`Удаление лаборатории ${labDeleteTarget.name}`"
+      :confirm-label="labDeleteTarget.name"
+      :confirm-prompt="`Введите название лаборатории «${labDeleteTarget.name}» для подтверждения`"
+      :busy="deleting"
+      warning="Лаборатория будет удалена безвозвратно. Удаление невозможно, если по ней есть результаты анализов — сначала удалите их."
+      @close="labDeleteTarget = null"
+      @confirm="confirmDeleteLab"
+    />
+
+    <ConfirmDeleteModal
+      v-if="analysisDeleteTarget"
+      :title="`Удаление результата · ${analysisDeleteTarget.sampleNumber}`"
+      :confirm-label="analysisDeleteTarget.sampleNumber"
+      :confirm-prompt="`Введите номер пробы «${analysisDeleteTarget.sampleNumber}» для подтверждения`"
+      :busy="deleting"
+      warning="Результат анализа будет удалён безвозвратно вместе со всеми его показателями."
+      @close="analysisDeleteTarget = null"
+      @confirm="confirmDeleteAnalysis"
+    />
   </div>
 </template>
 

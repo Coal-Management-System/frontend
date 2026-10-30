@@ -16,6 +16,7 @@ import {
   operationLabels,
 } from "@/lib/format";
 import BatchChips from "@/components/BatchChips.vue";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal.vue";
 import DecimalInput from "@/components/DecimalInput.vue";
 import LineageGraph from "@/components/LineageGraph.vue";
 import Modal from "@/components/Modal.vue";
@@ -82,6 +83,28 @@ const acceptForm = reactive({ batchId: "", volume: null as number | null });
 // The picked party, loaded on demand so the volume field can prefill its free remainder.
 const acceptBatch = ref<BatchDto | null>(null);
 const acceptBatchLoading = ref(false);
+
+// Destructive delete: the row being deleted, and the in-flight flag.
+const deleteTarget = ref<PileDto | null>(null);
+const deleting = ref(false);
+
+function openDelete(h: PileDto) {
+  deleteTarget.value = h;
+}
+
+async function confirmDelete(adminKey: string, text: string) {
+  if (!deleteTarget.value) return;
+  deleting.value = true;
+  try {
+    await pilesApi.remove(deleteTarget.value.id, adminKey, text);
+    deleteTarget.value = null;
+    await Promise.all([load(), loadOptions()]);
+  } catch (e) {
+    notifyError(errMsg(e));
+  } finally {
+    deleting.value = false;
+  }
+}
 
 async function loadOptions() {
   try {
@@ -327,6 +350,7 @@ onMounted(() => {
                 <button class="secondary" @click="openTransfer(h)">
                   Трансфер
                 </button>
+                <button class="danger" @click="openDelete(h)">Удалить</button>
               </td>
             </tr>
             <tr v-if="!rows.length">
@@ -586,6 +610,17 @@ onMounted(() => {
         <button class="secondary" @click="historyTarget = null">Закрыть</button>
       </div>
     </Modal>
+
+    <ConfirmDeleteModal
+      v-if="deleteTarget"
+      :title="`Удаление штабеля ${deleteTarget.pileNumber}`"
+      :confirm-label="deleteTarget.pileNumber"
+      :confirm-prompt="`Введите номер штабеля «${deleteTarget.pileNumber}» для подтверждения`"
+      :busy="deleting"
+      warning="Штабель будет удалён безвозвратно. Его движения открепляются (остаются в истории), партии открепляются, но сохраняются, а сам штабель убирается со склада."
+      @close="deleteTarget = null"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 

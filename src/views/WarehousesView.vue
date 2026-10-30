@@ -4,6 +4,7 @@ import { warehousesApi } from '@/api/coal'
 import type { PileDto, WarehouseCreateRequest, WarehouseDto } from '@/api/types'
 import { errMsg, fmt, fmtDate, pileStatusLabels, warehouseStatusLabels } from '@/lib/format'
 import BatchChips from '@/components/BatchChips.vue'
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue'
 import Modal from '@/components/Modal.vue'
 import Pagination from '@/components/Pagination.vue'
 import { usePagedList } from '@/composables/usePagedList'
@@ -30,6 +31,28 @@ const saving = ref(false)
 const WAREHOUSE_PREFIX = 'Ск-'
 
 const form = reactive<WarehouseCreateRequest>({ number: '', location: '', status: 'ACTIVE' })
+
+// Destructive delete: the row being deleted, and the in-flight flag.
+const deleteTarget = ref<WarehouseDto | null>(null)
+const deleting = ref(false)
+
+function openDelete(w: WarehouseDto) {
+  deleteTarget.value = w
+}
+
+async function confirmDelete(adminKey: string, text: string) {
+  if (!deleteTarget.value) return
+  deleting.value = true
+  try {
+    await warehousesApi.remove(deleteTarget.value.id, adminKey, text)
+    deleteTarget.value = null
+    await load()
+  } catch (e) {
+    notifyError(errMsg(e))
+  } finally {
+    deleting.value = false
+  }
+}
 
 watch(page, () => {
   open.value = {}
@@ -98,9 +121,12 @@ onMounted(load)
             <td>{{ warehouseStatusLabels[w.status] }}</td>
             <td>{{ fmtDate(w.createdAt) }}</td>
             <td>
-              <button class="secondary" @click="togglePiles(w)">
-                {{ open[w.id] ? 'Скрыть штабели' : 'Показать штабели' }} ({{ w.pileCount }})
-              </button>
+              <div class="flex gap-2 items-center">
+                <button class="secondary" @click="togglePiles(w)">
+                  {{ open[w.id] ? 'Скрыть штабели' : 'Показать штабели' }} ({{ w.pileCount }})
+                </button>
+                <button class="danger" @click="openDelete(w)">Удалить</button>
+              </div>
             </td>
           </tr>
           <tr v-if="open[w.id]">
@@ -179,5 +205,16 @@ onMounted(load)
         <button :disabled="saving" @click="submit">Добавить</button>
       </div>
     </Modal>
+
+    <ConfirmDeleteModal
+      v-if="deleteTarget"
+      :title="`Удаление склада ${deleteTarget.number}`"
+      :confirm-label="deleteTarget.number"
+      :confirm-prompt="`Введите номер склада «${deleteTarget.number}» для подтверждения`"
+      :busy="deleting"
+      warning="Склад будет удалён безвозвратно. Его штабели открепляются от склада, но сохраняются."
+      @close="deleteTarget = null"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>

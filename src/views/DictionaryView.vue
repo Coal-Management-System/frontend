@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from "vue";
 import { dictionaryApi } from "@/api/coal";
 import type { DictionaryField, DictionaryMap } from "@/api/types";
 import { errMsg } from "@/lib/format";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal.vue";
 import { notifyError } from "@/composables/useToast";
 
 const FIELDS: { key: DictionaryField; label: string }[] = [
@@ -30,6 +31,31 @@ const loading = ref(true);
 const error = ref("");
 const drafts = reactive<Record<string, string>>({});
 const adding = ref<DictionaryField | null>(null);
+
+// Destructive delete of one vocabulary word; the word itself is the confirm text.
+const deleteTarget = ref<{ field: DictionaryField; value: string } | null>(null);
+const deleting = ref(false);
+
+function openDelete(field: DictionaryField, value: string) {
+  deleteTarget.value = { field, value };
+}
+
+async function confirmDelete(adminKey: string, text: string) {
+  const target = deleteTarget.value;
+  if (!target) return;
+  deleting.value = true;
+  try {
+    await dictionaryApi.remove(target.field, target.value, adminKey, text);
+    dict[target.field] = dict[target.field].filter(
+      (w) => w.toLowerCase() !== target.value.toLowerCase(),
+    );
+    deleteTarget.value = null;
+  } catch (e) {
+    notifyError(errMsg(e));
+  } finally {
+    deleting.value = false;
+  }
+}
 
 async function load() {
   loading.value = true;
@@ -98,11 +124,32 @@ onMounted(load);
         </div>
 
         <div v-if="dict[f.key].length" class="dict-tags">
-          <span v-for="w in dict[f.key]" :key="w" class="dict-tag">{{ w }}</span>
+          <span v-for="w in dict[f.key]" :key="w" class="dict-tag">
+            {{ w }}
+            <button
+              type="button"
+              class="dict-tag-del"
+              title="Удалить слово"
+              @click="openDelete(f.key, w)"
+            >
+              ×
+            </button>
+          </span>
         </div>
         <p v-else class="muted dict-empty">Пока нет слов</p>
       </section>
     </div>
+
+    <ConfirmDeleteModal
+      v-if="deleteTarget"
+      :title="`Удаление слова «${deleteTarget.value}»`"
+      :confirm-label="deleteTarget.value"
+      :confirm-prompt="`Введите слово «${deleteTarget.value}» для подтверждения`"
+      :busy="deleting"
+      warning="Слово будет удалено из словаря безвозвратно. Уже созданные партии, использующие это слово, не изменяются."
+      @close="deleteTarget = null"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -162,6 +209,20 @@ onMounted(load);
   background: var(--wash, transparent);
   color: var(--color-ink-soft);
   font-size: 0.8rem;
+}
+.dict-tag-del {
+  margin-left: 0.35rem;
+  padding: 0 0.15rem;
+  border: none;
+  background: transparent;
+  color: var(--color-neon-red);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.dict-tag-del:hover {
+  color: color-mix(in srgb, var(--color-neon-red) 70%, #fff);
 }
 .dict-empty {
   margin: 0;
