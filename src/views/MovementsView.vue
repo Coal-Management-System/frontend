@@ -190,10 +190,18 @@ onMounted(() => {
         <label>
           Операция
           <select v-model="form.operation">
+            <!-- Product lifecycle: создание → перемещение → анализ → переработка
+                 → смешение → резервирование → отгрузка -->
             <option value="PILE_CREATED">Создание штабеля</option>
+            <option value="PILE_TRANSFERRED">Трансфер</option>
+            <option value="ANALYSIS">Анализ</option>
+            <option value="PROCESSING">Переработка</option>
+            <option value="BLENDING">Смешение</option>
+            <option value="RESERVATION">Резервирование</option>
+            <option value="SHIPMENT">Отгрузка</option>
+            <!-- Штабельные операции -->
             <option value="PILE_MERGED">Слияние штабелей</option>
             <option value="PILE_SPLIT">Разделение штабеля</option>
-            <option value="PILE_TRANSFERRED">Трансфер</option>
           </select>
         </label>
         <label>

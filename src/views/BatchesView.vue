@@ -49,6 +49,7 @@ const dict = reactive<DictionaryMap>({
   DEPOSIT: [],
   MINING_SITE: [],
   SUPPLIER: [],
+  METHOD: [],
 });
 const addingField = ref<DictionaryField | null>(null);
 

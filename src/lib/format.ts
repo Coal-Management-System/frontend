@@ -36,7 +36,12 @@ export const operationLabels: Record<MovementOperation, string> = {
   PILE_MERGED: 'Слияние штабелей',
   PILE_SPLIT: 'Разделение штабеля',
   PILE_TRANSFERRED: 'Трансфер',
-  BATCH_ACCEPTED_INTO_PILE: 'Прием партии в штабель'
+  BATCH_ACCEPTED_INTO_PILE: 'Прием партии в штабель',
+  ANALYSIS: 'Анализ',
+  PROCESSING: 'Переработка',
+  BLENDING: 'Смешение',
+  RESERVATION: 'Резервирование',
+  SHIPMENT: 'Отгрузка'
 }
 
 export const stageLabels: Record<AnalysisStage, string> = {

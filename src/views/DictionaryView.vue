@@ -13,6 +13,7 @@ const FIELDS: { key: DictionaryField; label: string }[] = [
   { key: "DEPOSIT", label: "Месторождение" },
   { key: "MINING_SITE", label: "Участок добычи" },
   { key: "SUPPLIER", label: "Поставщик" },
+  { key: "METHOD", label: "Метод анализа" },
 ];
 
 const dict = reactive<DictionaryMap>({
@@ -23,6 +24,7 @@ const dict = reactive<DictionaryMap>({
   DEPOSIT: [],
   MINING_SITE: [],
   SUPPLIER: [],
+  METHOD: [],
 });
 const loading = ref(true);
 const error = ref("");

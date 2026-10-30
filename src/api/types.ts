@@ -1,7 +1,17 @@
 export type BatchStatus = 'NEW' | 'IN_PROCESSING' | 'READY_FOR_SHIPMENT' | 'SHIPPED' | 'ARCHIVED'
 export type OriginType = 'OWN_MINING' | 'PURCHASED'
 export type PileStatus = 'ACTIVE' | 'SPLIT' | 'MERGED' | 'TRANSFERRED' | 'EMPTY'
-export type MovementOperation = 'PILE_CREATED' | 'PILE_MERGED' | 'PILE_SPLIT' | 'PILE_TRANSFERRED' | 'BATCH_ACCEPTED_INTO_PILE'
+export type MovementOperation =
+  | 'PILE_CREATED'
+  | 'PILE_MERGED'
+  | 'PILE_SPLIT'
+  | 'PILE_TRANSFERRED'
+  | 'BATCH_ACCEPTED_INTO_PILE'
+  | 'ANALYSIS'
+  | 'PROCESSING'
+  | 'BLENDING'
+  | 'RESERVATION'
+  | 'SHIPMENT'
 export type AnalysisStage = 'INITIAL' | 'AFTER_ENRICHMENT' | 'BEFORE_SHIPMENT'
 export type AnalysisStatus = 'DRAFT' | 'UPLOADED'
 export type WarehouseStatus = 'ACTIVE' | 'CLOSED'
@@ -305,6 +315,7 @@ export type DictionaryField =
   | 'DEPOSIT'
   | 'MINING_SITE'
   | 'SUPPLIER'
+  | 'METHOD'
 
 /** Every field's vocabulary, keyed by field name. */
 export type DictionaryMap = Record<DictionaryField, string[]>

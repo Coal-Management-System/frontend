@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { batchesApi, labsApi } from "@/api/coal";
+import { batchesApi, dictionaryApi, labsApi } from "@/api/coal";
 import type {
   AnalysisCreateRequest,
   AnalysisDto,
@@ -11,6 +11,7 @@ import type {
 import { errMsg, fmtDate, indicatorLabels, stageLabels } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
 import DateTimePicker from "@/components/DateTimePicker.vue";
+import AutocompleteInput from "@/components/AutocompleteInput.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
@@ -51,6 +52,10 @@ const {
 const batchOptions = ref<OptionDto[]>([]);
 const labOptions = ref<OptionDto[]>([]);
 
+// Analysis-method vocabulary, shared with the dictionary page; select-or-add.
+const methodOptions = ref<string[]>([]);
+const addingMethod = ref(false);
+
 // Form failures go to the toast host; this line only reports list-load errors.
 const error = computed(() => labsError.value || analysesError.value);
 const showLab = ref(false);
@@ -73,7 +78,7 @@ const form = reactive({
   labId: "",
   protocolNumber: "",
   responsibleEmployee: "",
-  method: "",
+  method: "" as string | undefined,
   analysisDateLocal: "",
   stage: "INITIAL" as AnalysisCreateRequest["stage"],
   values: [] as ValueRow[],
@@ -97,6 +102,36 @@ async function loadOptions() {
     ]);
   } catch (e) {
     notifyError(errMsg(e));
+  }
+}
+
+// Pull just the METHOD vocabulary from the shared dictionary; a failure only
+// means no suggestions — typing a method still works.
+async function loadMethodDict() {
+  try {
+    const data = await dictionaryApi.list();
+    methodOptions.value = data.METHOD ?? [];
+  } catch (e) {
+    notifyError(errMsg(e));
+  }
+}
+
+// Persist a newly-typed method, then keep it available locally right away.
+async function addMethod(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return;
+  addingMethod.value = true;
+  try {
+    await dictionaryApi.add("METHOD", trimmed);
+    if (!methodOptions.value.some((v) => v.toLowerCase() === trimmed.toLowerCase())) {
+      methodOptions.value = [...methodOptions.value, trimmed].sort((a, b) =>
+        a.localeCompare(b),
+      );
+    }
+  } catch (e) {
+    notifyError(errMsg(e));
+  } finally {
+    addingMethod.value = false;
   }
 }
 
@@ -163,6 +198,7 @@ onMounted(() => {
   void loadLabs();
   void loadAnalyses();
   void loadOptions();
+  void loadMethodDict();
 });
 </script>
 
@@ -323,7 +359,12 @@ onMounted(() => {
         </label>
         <label>
           Метод анализа
-          <input v-model="form.method" />
+          <AutocompleteInput
+            v-model="form.method"
+            :options="methodOptions"
+            :busy="addingMethod"
+            @add-new="addMethod"
+          />
         </label>
         <label>
           Дата анализа
