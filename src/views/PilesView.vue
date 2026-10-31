@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { batchesApi, pilesApi, warehousesApi } from "@/api/coal";
 import type {
   BatchDto,
@@ -68,6 +68,44 @@ const createForm = reactive({
   originSource: "",
   batchIds: [] as string[],
 });
+
+// Per-party remaining volume, fetched on first selection so the pile volume can
+// be summed from the chosen parties. Cached to avoid refetching on every toggle.
+const batchVolumeCache = reactive<Record<string, number>>({});
+
+// Selecting a party adds its remaining volume to the pile; deselecting removes
+// it. The volume field tracks the running total of the current selection.
+async function syncCreateVolume() {
+  const ids = [...createForm.batchIds];
+  await Promise.all(
+    ids
+      .filter((id) => !(id in batchVolumeCache))
+      .map(async (id) => {
+        try {
+          const b = await batchesApi.get(id);
+          batchVolumeCache[id] = b.remainingVolume ?? 0;
+        } catch {
+          batchVolumeCache[id] = 0;
+        }
+      }),
+  );
+  if (!ids.length) {
+    createForm.volume = null;
+    return;
+  }
+  const total = ids.reduce((sum, id) => sum + (batchVolumeCache[id] ?? 0), 0);
+  // Round to the same 2 decimals the field accepts, otherwise float sums such as
+  // 12.34 + 0.01 would render as 12.350000000000001.
+  createForm.volume = Math.round(total * 100) / 100;
+}
+
+watch(
+  () => createForm.batchIds,
+  () => {
+    void syncCreateVolume();
+  },
+  { deep: true },
+);
 
 const splitForm = reactive({
   volume: null as number | null,
@@ -408,11 +446,21 @@ onMounted(() => {
           Партии в штабеле
           <select v-model="createForm.batchIds" multiple size="5">
             <option v-for="o in batchOptions" :key="o.id" :value="o.id">
-              {{ o.label }}
+              {{ o.label
+              }}{{
+                batchVolumeCache[o.id] !== undefined
+                  ? " · " + fmt(batchVolumeCache[o.id]) + " т"
+                  : ""
+              }}
             </option>
           </select>
         </label>
       </div>
+      <p class="muted">
+        Объем штабеля считается автоматически как сумма остатков выбранных
+        партий: выберите партию — объем увеличится, уберите — уменьшится. Значение
+        пересчитывается при каждом изменении состава партий.
+      </p>
       <div class="actions">
         <button class="secondary" @click="showCreate = false">Отмена</button>
         <button :disabled="saving" @click="submitCreate">Добавить</button>

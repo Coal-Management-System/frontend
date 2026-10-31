@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { batchesApi, qrImageUrl } from "@/api/coal";
+import { batchesApi, dictionaryApi, qrImageUrl } from "@/api/coal";
 import type {
   AnalysisDto,
   BatchDto,
@@ -21,6 +21,7 @@ import {
 } from "@/lib/format";
 import DecimalInput from "@/components/DecimalInput.vue";
 import DateTimePicker from "@/components/DateTimePicker.vue";
+import AutocompleteInput from "@/components/AutocompleteInput.vue";
 import Modal from "@/components/Modal.vue";
 import { notifyError } from "@/composables/useToast";
 
@@ -53,6 +54,48 @@ const form = reactive({
   minedAtLocal: "",
   initialWeight: null as number | null,
 });
+
+// Supplier vocabulary, shared with the party create form.
+const supplierWords = ref<string[]>([]);
+const addingSupplier = ref(false);
+
+async function loadDict() {
+  try {
+    supplierWords.value = (await dictionaryApi.list()).SUPPLIER ?? [];
+  } catch (e) {
+    // No suggestions only means typing without typeahead; editing still works.
+    notifyError(errMsg(e));
+  }
+}
+
+// Persist a newly-typed supplier, then keep it selectable locally right away.
+async function addSupplier(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return;
+  addingSupplier.value = true;
+  try {
+    await dictionaryApi.add("SUPPLIER", trimmed);
+    if (
+      !supplierWords.value.some(
+        (v) => v.toLowerCase() === trimmed.toLowerCase(),
+      )
+    ) {
+      supplierWords.value = [...supplierWords.value, trimmed].sort((a, b) =>
+        a.localeCompare(b),
+      );
+    }
+  } catch (e) {
+    notifyError(errMsg(e));
+  } finally {
+    addingSupplier.value = false;
+  }
+}
+
+// A supplier only applies to purchased coal. Bound to the select's change event
+// rather than a watcher so that loading a party never clears a stored supplier.
+function onOriginChange() {
+  if (form.originType !== "PURCHASED") form.supplier = "";
+}
 
 // deletion: step 1 = warning, step 2 = type the batch number + admin key
 const deleteStep = ref<0 | 1 | 2>(0);
@@ -106,6 +149,7 @@ function fillForm(b: BatchDto) {
 }
 
 onMounted(async () => {
+  void loadDict();
   try {
     batch.value = await batchesApi.get(id);
     fillForm(batch.value);
@@ -278,7 +322,7 @@ function resetForm() {
         <div class="form-grid">
           <label>
             Источник образования партии
-            <select v-model="form.originType">
+            <select v-model="form.originType" @change="onOriginChange">
               <option
                 v-for="(label, key) in originLabels"
                 :key="key"
@@ -305,8 +349,19 @@ function resetForm() {
             <input v-model="form.shiftPeriod" />
           </label>
           <label>
-            Поставщик
-            <input v-model="form.supplier" />
+            Поставщик (если уголь закупной)
+            <AutocompleteInput
+              v-model="form.supplier"
+              :options="supplierWords"
+              :busy="addingSupplier"
+              :disabled="form.originType !== 'PURCHASED'"
+              :placeholder="
+                form.originType === 'PURCHASED'
+                  ? ''
+                  : 'Доступно при источнике «Закупной уголь»'
+              "
+              @add-new="addSupplier"
+            />
           </label>
           <label>
             Дата добычи или поступления

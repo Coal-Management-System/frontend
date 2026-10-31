@@ -316,6 +316,8 @@ export type DictionaryField =
   | 'MINING_SITE'
   | 'SUPPLIER'
   | 'METHOD'
+  /** Movement "from"/"to" places; one shared vocabulary for both directions. */
+  | 'LOCATION'
 
 /** Every field's vocabulary, keyed by field name. */
 export type DictionaryMap = Record<DictionaryField, string[]>

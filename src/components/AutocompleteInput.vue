@@ -7,8 +7,9 @@ const props = withDefaults(
     options: string[];
     placeholder?: string;
     busy?: boolean;
+    disabled?: boolean;
   }>(),
-  { placeholder: "", busy: false },
+  { placeholder: "", busy: false, disabled: false },
 );
 const emit = defineEmits<{ (e: "add-new", value: string): void }>();
 
@@ -35,13 +36,19 @@ const exactMatch = computed(() => {
 
 // Offer to add only when the typed word isn't already known.
 const canAdd = computed(
-  () => query.value !== "" && !exactMatch.value && !props.busy,
+  () =>
+    query.value !== "" && !exactMatch.value && !props.busy && !props.disabled,
 );
 
 // The selectable rows: matching words, then the "add" row at the end.
 const rowCount = computed(() => filtered.value.length + (canAdd.value ? 1 : 0));
 
 function toggleDropdown(force?: boolean) {
+  // A disabled field never opens its list, even if focus() is called on it.
+  if (props.disabled) {
+    open.value = false;
+    return;
+  }
   open.value = force ?? !open.value;
   if (open.value) highlight.value = -1;
 }
@@ -111,6 +118,7 @@ onBeforeUnmount(() => document.removeEventListener("click", onDocumentClick));
     <input
       :value="model"
       :placeholder="placeholder"
+      :disabled="disabled"
       autocomplete="off"
       @input="onInput"
       @focus="toggleDropdown(true)"

@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
-import { batchesApi, pilesApi, movementsApi, qrImageUrl } from "@/api/coal";
+import { onMounted, reactive, ref, watch } from "vue";
+import {
+  batchesApi,
+  dictionaryApi,
+  pilesApi,
+  movementsApi,
+  qrImageUrl,
+} from "@/api/coal";
 import type { MovementCreateRequest, MovementDto, OptionDto } from "@/api/types";
 import { errMsg, fmt, fmtDate, operationLabels } from "@/lib/format";
+import AutocompleteInput from "@/components/AutocompleteInput.vue";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal.vue";
 import DecimalInput from "@/components/DecimalInput.vue";
 import Modal from "@/components/Modal.vue";
@@ -69,6 +76,59 @@ const form = reactive<
   originSource: "",
 });
 
+// Number + remaining volume of every party already looked up, so re-picking a
+// party costs no request.
+const batchInfoCache = reactive<
+  Record<string, { number: string; remaining: number }>
+>({});
+// Explains why the volume stayed empty for a party with no usable remainder.
+const volumeHint = ref("");
+
+function round2(v: number) {
+  return Math.round(v * 100) / 100;
+}
+
+// Picking a party fills «Объем, т» with what is actually left of it (the same
+// «Остаток партии, т» the parties list shows); clearing the party empties it.
+async function syncVolumeFromBatch() {
+  const id = form.batchId;
+  if (!id) {
+    form.volume = null;
+    volumeHint.value = "";
+    return;
+  }
+  if (!(id in batchInfoCache)) {
+    try {
+      const b = await batchesApi.get(id);
+      batchInfoCache[id] = {
+        number: b.batchNumber,
+        remaining: b.remainingVolume ?? 0,
+      };
+    } catch (e) {
+      // Leave whatever the user typed rather than clearing it on a failed lookup.
+      notifyError(errMsg(e));
+      return;
+    }
+  }
+  const { number, remaining } = batchInfoCache[id];
+  if (remaining > 0) {
+    form.volume = round2(remaining);
+    volumeHint.value = "";
+  } else {
+    // Legacy parties can have a zero or negative remainder; the backend rejects a
+    // non-positive volume, so nothing is filled in and the user decides.
+    form.volume = null;
+    volumeHint.value = `У партии ${number} нет остатка — укажите объем вручную.`;
+  }
+}
+
+watch(
+  () => form.batchId,
+  () => {
+    void syncVolumeFromBatch();
+  },
+);
+
 async function loadOptions() {
   try {
     [batchOptions.value, pileOptions.value] = await Promise.all([
@@ -80,8 +140,48 @@ async function loadOptions() {
   }
 }
 
+// «Откуда» and «Куда» share one place vocabulary, so a warehouse, shaft or
+// station typed once is offered in both directions afterwards.
+const locationWords = ref<string[]>([]);
+// Which of the two fields is currently saving a new place, so only that one
+// shows its dropdown as busy.
+const addingLocation = ref<"from" | "to" | null>(null);
+
+async function loadDict() {
+  try {
+    locationWords.value = (await dictionaryApi.list()).LOCATION ?? [];
+  } catch (e) {
+    // Without suggestions the fields still accept free text, so this is a warning.
+    notifyError(errMsg(e));
+  }
+}
+
+// Persist a newly-typed place, then keep it selectable locally right away.
+async function addLocation(which: "from" | "to", value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return;
+  addingLocation.value = which;
+  try {
+    await dictionaryApi.add("LOCATION", trimmed);
+    if (
+      !locationWords.value.some(
+        (v) => v.toLowerCase() === trimmed.toLowerCase(),
+      )
+    ) {
+      locationWords.value = [...locationWords.value, trimmed].sort((a, b) =>
+        a.localeCompare(b),
+      );
+    }
+  } catch (e) {
+    notifyError(errMsg(e));
+  } finally {
+    addingLocation.value = null;
+  }
+}
+
 async function submit() {
   saving.value = true;
+  const movedBatchId = form.batchId;
   try {
     await movementsApi.create({
       batchId: form.batchId || null,
@@ -93,6 +193,13 @@ async function submit() {
       originSource: form.originSource || undefined,
     });
     showCreate.value = false;
+    // The movement just changed this party's remainder, so drop the cached figure
+    // and clear the party: the next pick refetches instead of reusing a stale one.
+    // Operation, pile and the places stay filled for quick repeated entry.
+    if (movedBatchId) delete batchInfoCache[movedBatchId];
+    form.batchId = "";
+    form.volume = null;
+    volumeHint.value = "";
     await first();
   } catch (e) {
     notifyError(errMsg(e));
@@ -104,6 +211,7 @@ async function submit() {
 onMounted(() => {
   void load();
   void loadOptions();
+  void loadDict();
 });
 </script>
 
@@ -237,17 +345,32 @@ onMounted(() => {
         </label>
         <label>
           Откуда
-          <input v-model="form.fromLocation" />
+          <AutocompleteInput
+            v-model="form.fromLocation"
+            :options="locationWords"
+            :busy="addingLocation === 'from'"
+            @add-new="addLocation('from', $event)"
+          />
         </label>
         <label>
           Куда
-          <input v-model="form.toLocation" />
+          <AutocompleteInput
+            v-model="form.toLocation"
+            :options="locationWords"
+            :busy="addingLocation === 'to'"
+            @add-new="addLocation('to', $event)"
+          />
         </label>
         <label class="full">
           Источник происхождения
           <input v-model="form.originSource" />
         </label>
       </div>
+      <p v-if="volumeHint" class="muted">{{ volumeHint }}</p>
+      <p v-else class="muted">
+        Объем подставляется автоматически из остатка выбранной партии
+        («Остаток партии, т»); при смене партии значение пересчитывается.
+      </p>
       <div class="actions">
         <button class="secondary" @click="showCreate = false">Отмена</button>
         <button :disabled="saving" @click="submit">Добавить</button>

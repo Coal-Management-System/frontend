@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { batchesApi, dictionaryApi } from "@/api/coal";
 import type {
@@ -50,6 +50,8 @@ const dict = reactive<DictionaryMap>({
   MINING_SITE: [],
   SUPPLIER: [],
   METHOD: [],
+  // Movement places; not used on this page, but the map is typed per field.
+  LOCATION: [],
 });
 const addingField = ref<DictionaryField | null>(null);
 
@@ -101,6 +103,16 @@ const form = reactive<
   minedAtLocal: "",
   initialWeight: null,
 });
+
+// A supplier only exists for purchased coal: the field stays disabled for own
+// mining, and anything typed before switching origin is dropped so it can never
+// be saved onto an OWN_MINING party.
+watch(
+  () => form.originType,
+  (origin) => {
+    if (origin !== "PURCHASED") form.supplier = "";
+  },
+);
 
 function originOf(b: BatchDto): string {
   return b.originType === "PURCHASED"
@@ -322,6 +334,12 @@ onMounted(() => {
             v-model="form.supplier"
             :options="dict.SUPPLIER"
             :busy="addingField === 'SUPPLIER'"
+            :disabled="form.originType !== 'PURCHASED'"
+            :placeholder="
+              form.originType === 'PURCHASED'
+                ? ''
+                : 'Доступно при источнике «Закупной уголь»'
+            "
             @add-new="addWord('SUPPLIER', $event)"
           />
         </label>

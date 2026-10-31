@@ -107,6 +107,14 @@
       border-color: var(--focus-ring);
       box-shadow: 0 0 0 3px var(--focus-ring-soft);
     }
+
+    // Fields that only apply to part of the form (e.g. the supplier of purchased
+    // coal) are dimmed rather than hidden, so the layout stays put.
+    &:disabled {
+      opacity: 0.5;
+      color: $mute-2;
+      cursor: not-allowed;
+    }
   }
   input::placeholder {
     color: $mute-2;
