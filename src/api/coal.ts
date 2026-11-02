@@ -36,6 +36,9 @@ export const batchesApi = {
       .get<OptionDto[]>('/batches/options', { params: availableOnly ? { availableOnly: true } : {} })
       .then(r => r.data),
   get: (id: string) => http.get<BatchDto>(`/batches/${id}`).then(r => r.data),
+  /** Preview only: nothing is reserved, so the saved party may get a later number. */
+  nextNumber: () =>
+    http.get<{ batchNumber: string }>('/batches/next-number').then(r => r.data.batchNumber),
   create: (req: BatchCreateRequest) => http.post<BatchDto>('/batches', req).then(r => r.data),
   update: (id: string, req: BatchUpdateRequest) =>
     http.put<BatchDto>(`/batches/${id}`, req).then(r => r.data),

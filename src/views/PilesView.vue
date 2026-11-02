@@ -22,7 +22,7 @@ import LineageGraph from "@/components/LineageGraph.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
-import { notifyError } from "@/composables/useToast";
+import { notifyError, notifySuccess } from "@/composables/useToast";
 
 const {
   rows,
@@ -40,7 +40,10 @@ const {
 
 // Dropdowns read the unpaged /options endpoints, otherwise they would truncate at 10 rows.
 const warehouseOptions = ref<OptionDto[]>([]);
-const batchOptions = ref<OptionDto[]>([]);
+// The create form needs each party's remaining volume and its pile links to lock
+// the ones already folded into a pile, and /options carries neither — so parties
+// are read from the paged list instead.
+const batchOptions = ref<BatchDto[]>([]);
 // Parties that still have unaccepted volume — the only ones offerable to a pile.
 const acceptBatchOptions = ref<OptionDto[]>([]);
 const pileOptions = ref<OptionDto[]>([]);
@@ -69,31 +72,37 @@ const createForm = reactive({
   batchIds: [] as string[],
 });
 
-// Per-party remaining volume, fetched on first selection so the pile volume can
-// be summed from the chosen parties. Cached to avoid refetching on every toggle.
-const batchVolumeCache = reactive<Record<string, number>>({});
+// A party that already belongs to a pile cannot be folded into a new one — the
+// same coal would be counted twice — so such rows are disabled in the picker.
+function pilesOf(b: BatchDto): string[] {
+  return b.pileNumbers ?? [];
+}
+
+function isLocked(b: BatchDto): boolean {
+  return pilesOf(b).length > 0;
+}
+
+// «П-001 · уже в Шт-001» for a locked row, «П-002 · остаток 45 т» for a free one.
+function batchOptionLabel(b: BatchDto): string {
+  return isLocked(b)
+    ? `${b.batchNumber} · уже в ${pilesOf(b).join(", ")}`
+    : `${b.batchNumber} · остаток ${fmt(b.remainingVolume)} т`;
+}
+
+function remainingOf(id: string): number {
+  return batchOptions.value.find((b) => b.id === id)?.remainingVolume ?? 0;
+}
 
 // Selecting a party adds its remaining volume to the pile; deselecting removes
-// it. The volume field tracks the running total of the current selection.
-async function syncCreateVolume() {
+// it. The volume field tracks the running total of the current selection, read
+// straight from the loaded parties so no extra request or stale cache is needed.
+function syncCreateVolume() {
   const ids = [...createForm.batchIds];
-  await Promise.all(
-    ids
-      .filter((id) => !(id in batchVolumeCache))
-      .map(async (id) => {
-        try {
-          const b = await batchesApi.get(id);
-          batchVolumeCache[id] = b.remainingVolume ?? 0;
-        } catch {
-          batchVolumeCache[id] = 0;
-        }
-      }),
-  );
   if (!ids.length) {
     createForm.volume = null;
     return;
   }
-  const total = ids.reduce((sum, id) => sum + (batchVolumeCache[id] ?? 0), 0);
+  const total = ids.reduce((sum, id) => sum + remainingOf(id), 0);
   // Round to the same 2 decimals the field accepts, otherwise float sums such as
   // 12.34 + 0.01 would render as 12.350000000000001.
   createForm.volume = Math.round(total * 100) / 100;
@@ -102,7 +111,18 @@ async function syncCreateVolume() {
 watch(
   () => createForm.batchIds,
   () => {
-    void syncCreateVolume();
+    // `disabled` only blocks the mouse and keyboard, so a locked party can still
+    // land in the model programmatically. Pruning it here keeps it out of both the
+    // sum and the payload; the assignment re-triggers this watcher, which then sums.
+    const free = createForm.batchIds.filter((id) => {
+      const b = batchOptions.value.find((x) => x.id === id);
+      return !b || !isLocked(b);
+    });
+    if (free.length !== createForm.batchIds.length) {
+      createForm.batchIds = free;
+      return;
+    }
+    syncCreateVolume();
   },
   { deep: true },
 );
@@ -113,6 +133,25 @@ const splitForm = reactive({
   newBatchNumber: "",
   sendImmediately: false,
 });
+
+// Same rule as the party form: the number is the server's to assign, but an operator can
+// unlock the field to type a specific one for the party the split produces.
+const manualSplitNumber = ref(false);
+
+async function prepareSplitNumber() {
+  manualSplitNumber.value = false;
+  splitForm.newBatchNumber = "";
+  try {
+    splitForm.newBatchNumber = await batchesApi.nextNumber();
+  } catch {
+    // Only a preview is lost; the split still gets a number from the server.
+  }
+}
+
+function toggleSplitNumber() {
+  manualSplitNumber.value = !manualSplitNumber.value;
+  if (!manualSplitNumber.value) void prepareSplitNumber();
+}
 
 const mergeForm = reactive({ targetPileId: "", sourcePileIds: [] as string[] });
 const transferForm = reactive({ toWarehouseId: "" });
@@ -144,6 +183,20 @@ async function confirmDelete(adminKey: string, text: string) {
   }
 }
 
+/** Every party, walked page by page because the server caps one page at 100 rows. */
+async function allBatches(): Promise<BatchDto[]> {
+  const out: BatchDto[] = [];
+  let page = 0;
+  for (;;) {
+    const res = await batchesApi.list({ page, size: 100 });
+    out.push(...res.content);
+    // Terminates on the last page and on an empty one, so a bad totalPages cannot loop.
+    if (!res.content.length || page + 1 >= res.totalPages) break;
+    page += 1;
+  }
+  return out;
+}
+
 async function loadOptions() {
   try {
     [
@@ -153,7 +206,7 @@ async function loadOptions() {
       pileOptions.value,
     ] = await Promise.all([
       warehousesApi.options(),
-      batchesApi.options(),
+      allBatches(),
       batchesApi.options(true),
       pilesApi.options(),
     ]);
@@ -166,8 +219,8 @@ function openSplit(h: PileDto) {
   splitTarget.value = h;
   splitForm.volume = null;
   splitForm.toWarehouseId = h.warehouseId || "";
-  splitForm.newBatchNumber = "";
   splitForm.sendImmediately = false;
+  void prepareSplitNumber();
 }
 
 function openTransfer(h: PileDto) {
@@ -276,14 +329,23 @@ async function submitCreate() {
 
 async function submitSplit() {
   if (!splitTarget.value) return;
+  const manual = manualSplitNumber.value ? splitForm.newBatchNumber.trim() : "";
+  if (manualSplitNumber.value && !manual) {
+    notifyError("Укажите номер партии или верните автоматическую нумерацию");
+    return;
+  }
   saving.value = true;
   try {
-    await pilesApi.split(splitTarget.value.id, {
+    const created = await pilesApi.split(splitTarget.value.id, {
       volume: splitForm.volume ?? 0,
       toWarehouseId: splitForm.toWarehouseId || null,
-      newBatchNumber: splitForm.newBatchNumber,
+      newBatchNumber: manual || undefined,
       sendImmediately: splitForm.sendImmediately,
     });
+    // The response is the new pile, whose single party is the one the server just numbered.
+    notifySuccess(
+      `Новая партия ${created.batchNumbers[0] ?? ""} · штабель ${created.pileNumber}`,
+    );
     splitTarget.value = null;
     await Promise.all([load(), loadOptions()]);
   } catch (e) {
@@ -445,21 +507,22 @@ onMounted(() => {
         <label class="full">
           Партии в штабеле
           <select v-model="createForm.batchIds" multiple size="5">
-            <option v-for="o in batchOptions" :key="o.id" :value="o.id">
-              {{ o.label
-              }}{{
-                batchVolumeCache[o.id] !== undefined
-                  ? " · " + fmt(batchVolumeCache[o.id]) + " т"
-                  : ""
-              }}
+            <option
+              v-for="b in batchOptions"
+              :key="b.id"
+              :value="b.id"
+              :disabled="isLocked(b)"
+            >
+              {{ batchOptionLabel(b) }}
             </option>
           </select>
         </label>
       </div>
       <p class="muted">
         Объем штабеля считается автоматически как сумма остатков выбранных
-        партий: выберите партию — объем увеличится, уберите — уменьшится. Значение
-        пересчитывается при каждом изменении состава партий.
+        партий: выберите партию — объем увеличится, уберите — уменьшится. Партии,
+        уже лежащие в штабеле, недоступны для выбора — иначе один и тот же уголь
+        попал бы в два штабеля сразу.
       </p>
       <div class="actions">
         <button class="secondary" @click="showCreate = false">Отмена</button>
@@ -485,17 +548,33 @@ onMounted(() => {
             </option>
           </select>
         </label>
-        <label class="full">
-          Номер новой партии
-          <input v-model="splitForm.newBatchNumber" />
-        </label>
+        <div class="field full">
+          <span class="flex items-center justify-between gap-2">
+            Номер новой партии
+            <button
+              type="button"
+              class="shrink-0 rounded-lg border border-line px-2 py-0.5 text-[0.7rem] text-mute hover:text-ink"
+              @click="toggleSplitNumber"
+            >
+              {{ manualSplitNumber ? "Автономер" : "Изменить" }}
+            </button>
+          </span>
+          <input
+            v-model="splitForm.newBatchNumber"
+            :disabled="!manualSplitNumber"
+            :placeholder="manualSplitNumber ? 'Например, П-021126-007' : ''"
+          />
+        </div>
         <label class="full">
           <input v-model="splitForm.sendImmediately" type="checkbox" />
           Разделить и отправить в переработку
         </label>
       </div>
       <p class="muted">
-        При разделении штабеля автоматически создается новая партия.
+        При разделении штабеля автоматически создается новая партия. Её номер
+        присваивается системой по общему правилу «П-ДДММГГ-№» и показан выше, но
+        не забронирован: окончательный номер сообщается после сохранения. Кнопка
+        «Изменить» разблокирует поле, чтобы задать свой номер.
       </p>
       <div class="actions">
         <button class="secondary" @click="splitTarget = null">Отмена</button>

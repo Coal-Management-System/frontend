@@ -21,7 +21,7 @@ import AutocompleteInput from "@/components/AutocompleteInput.vue";
 import Modal from "@/components/Modal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
-import { notifyError } from "@/composables/useToast";
+import { notifyError, notifySuccess } from "@/composables/useToast";
 
 const {
   rows,
@@ -38,7 +38,6 @@ const {
 } = usePagedList<BatchDto>(batchesApi.list);
 const showCreate = ref(false);
 const saving = ref(false);
-const BATCH_PREFIX = "П-";
 
 // Shared vocabulary behind the seven free-text fields, loaded once on open.
 const dict = reactive<DictionaryMap>({
@@ -85,7 +84,10 @@ async function addWord(field: DictionaryField, value: string) {
 }
 
 const form = reactive<
-  Omit<BatchCreateRequest, "initialWeight"> & {
+  Omit<BatchCreateRequest, "initialWeight" | "batchNumber"> & {
+    // Required locally even though the request field is optional: it carries the server's
+    // preview, and is only sent when the operator unlocks it.
+    batchNumber: string;
     minedAtLocal: string;
     initialWeight: number | null;
   }
@@ -104,6 +106,33 @@ const form = reactive<
   initialWeight: null,
 });
 
+// The number is the server's to assign, so the field normally just shows what the next
+// party will be called. Unlocking it lets an operator type a specific number instead —
+// for one already written on a paper document, say — which the server then duplicate-checks.
+const manualNumber = ref(false);
+
+/** Asks the server what the next number would be; a failed lookup only leaves the field empty. */
+async function prepareNumber() {
+  manualNumber.value = false;
+  form.batchNumber = "";
+  try {
+    form.batchNumber = await batchesApi.nextNumber();
+  } catch {
+    // Not worth a toast: the number is still assigned on save, the preview is a convenience.
+  }
+}
+
+// Refreshed on every open, so a number issued to someone else in the meantime is not shown.
+watch(showCreate, (open) => {
+  if (open) void prepareNumber();
+});
+
+/** Unlocks the field for typing; locking it again restores the server's suggestion. */
+function toggleManualNumber() {
+  manualNumber.value = !manualNumber.value;
+  if (!manualNumber.value) void prepareNumber();
+}
+
 // A supplier only exists for purchased coal: the field stays disabled for own
 // mining, and anything typed before switching origin is dropped so it can never
 // be saved onto an OWN_MINING party.
@@ -121,15 +150,17 @@ function originOf(b: BatchDto): string {
 }
 
 async function submit() {
-  const number = form.batchNumber.trim();
-  if (!number) {
-    notifyError("Укажите номер партии");
+  // Only an unlocked field is sent: otherwise the server assigns the number itself, which
+  // keeps the daily counter authoritative even if the preview went stale while typing.
+  const manual = manualNumber.value ? form.batchNumber.trim() : "";
+  if (manualNumber.value && !manual) {
+    notifyError("Укажите номер партии или верните автоматическую нумерацию");
     return;
   }
   saving.value = true;
   try {
     const payload: BatchCreateRequest = {
-      batchNumber: `${BATCH_PREFIX}${number}`,
+      batchNumber: manual || undefined,
       productType: form.productType || undefined,
       coalGrade: form.coalGrade || undefined,
       fraction: form.fraction || undefined,
@@ -144,7 +175,10 @@ async function submit() {
         : undefined,
       initialWeight: form.initialWeight ?? 0,
     };
-    await batchesApi.create(payload);
+    // The final number comes from the server, so the toast reports what was really assigned
+    // rather than the preview the form showed before saving.
+    const created = await batchesApi.create(payload);
+    notifySuccess(`Партия ${created.batchNumber} создана`);
     showCreate.value = false;
     resetForm();
     await load();
@@ -245,20 +279,23 @@ onMounted(() => {
       @close="showCreate = false"
     >
       <div class="form-grid">
-        <label>
-          Номер партии
-          <div class="flex items-stretch">
-            <span
-              class="flex items-center rounded-l-[10px] border border-r-0 border-line px-3 text-mute select-none"
+        <div class="field full">
+          <span class="flex items-center justify-between gap-2">
+            Номер партии
+            <button
+              type="button"
+              class="shrink-0 rounded-lg border border-line px-2 py-0.5 text-[0.7rem] text-mute hover:text-ink"
+              @click="toggleManualNumber"
             >
-              {{ BATCH_PREFIX }}
-            </span>
-            <input
-              v-model="form.batchNumber"
-              class="!rounded-l-none flex-1 min-w-0"
-            />
-          </div>
-        </label>
+              {{ manualNumber ? "Автономер" : "Изменить" }}
+            </button>
+          </span>
+          <input
+            v-model="form.batchNumber"
+            :disabled="!manualNumber"
+            :placeholder="manualNumber ? 'Например, П-021126-007' : ''"
+          />
+        </div>
         <label>
           Тип продукции
           <AutocompleteInput
@@ -348,6 +385,15 @@ onMounted(() => {
           <DateTimePicker v-model="form.minedAtLocal" />
         </label>
       </div>
+      <p class="muted">
+        Номер партии присваивается автоматически по шаблону «П-ДДММГГ-№»
+        (например, П-021126-001): счётчик дня растет на единицу с каждой новой
+        партией, поэтому два оператора, сохраняющие одновременно, получат разные
+        номера. Поле выше показывает номер заранее, но не бронирует его — если
+        кто-то сохранит партию раньше, ваша получит следующий. Кнопка «Изменить»
+        разблокирует поле, чтобы задать свой номер; повторное нажатие вернет
+        автоматический.
+      </p>
       <div class="actions">
         <button class="secondary" @click="showCreate = false">Отмена</button>
         <button :disabled="saving" @click="submit">Добавить</button>

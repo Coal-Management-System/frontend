@@ -432,7 +432,11 @@
     grid-template-columns: 1fr 1fr;
     gap: 0.7rem 0.9rem;
 
-    label {
+    // `.field` is the same box as a label for the few inputs that carry a control of
+    // their own (the party number's «Изменить» toggle), where nesting a button inside a
+    // label would make the label forward the click to the input.
+    label,
+    .field {
       display: flex;
       flex-direction: column;
       gap: 0.3rem;

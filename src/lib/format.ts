@@ -82,7 +82,6 @@ const fieldLabels: Record<string, string> = {
   initialWeight: 'объем партии',
   pileNumber: 'номер штабеля',
   volume: 'объем',
-  newBatchNumber: 'номер новой партии',
   number: 'номер склада',
   name: 'название',
   sampleNumber: 'номер пробы',

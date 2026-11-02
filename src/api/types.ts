@@ -74,8 +74,9 @@ export interface BatchDto {
   createdAt: string
 }
 
+/** Omit the batch number and the server assigns «П-ddMMyy-NNN»; send one to override it. */
 export interface BatchCreateRequest {
-  batchNumber: string
+  batchNumber?: string
   productType?: string
   coalGrade?: string
   fraction?: string
@@ -134,10 +135,11 @@ export interface PileCreateRequest {
   batchIds?: string[]
 }
 
+/** The party split off the pile is numbered by the server unless newBatchNumber is sent. */
 export interface PileSplitRequest {
   volume: number
   toWarehouseId?: string | null
-  newBatchNumber: string
+  newBatchNumber?: string
   sendImmediately: boolean
 }
 
