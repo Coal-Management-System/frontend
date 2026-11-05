@@ -74,7 +74,7 @@ export interface BatchDto {
   createdAt: string
 }
 
-/** Omit the batch number and the server assigns «П-ddMMyy-NNN»; send one to override it. */
+/** Omit the batch number and the server assigns «П-yyMMdd-NNN»; send one to override it. */
 export interface BatchCreateRequest {
   batchNumber?: string
   productType?: string
