@@ -62,6 +62,7 @@ export interface BatchDto {
   inProcessingVolume: number
   shippedVolume: number
   losses: number
+  transferredVolume: number
   currentRemainder: number
   freeVolume: number
   acceptedVolume: number
@@ -327,4 +328,35 @@ export type DictionaryMap = Record<DictionaryField, string[]>
 export interface DictionaryEntryDto {
   field: DictionaryField
   value: string
+}
+
+export type QrActionType = 'ACCEPT_BATCH_INTO_PILE'
+export type QrActionStatus = 'OPEN' | 'DONE' | 'CANCELLED'
+
+export interface QrActionDto {
+  id: string
+  action: QrActionType
+  status: QrActionStatus
+  batchId: string
+  batchNumber: string
+  remainingVolume: number
+  warehouseId: string
+  warehouseNumber: string
+  createdAt: string
+}
+
+export interface QrActionScanDto {
+  action: QrActionDto
+  piles: PileDto[]
+}
+
+export interface QrActionCreateRequest {
+  action: QrActionType
+  batchId: string
+  warehouseId: string
+}
+
+export interface QrActionExecuteRequest {
+  pileId: string
+  volume: number
 }

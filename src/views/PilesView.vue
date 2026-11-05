@@ -225,7 +225,7 @@ function openSplit(h: PileDto) {
 
 function openTransfer(h: PileDto) {
   transferTarget.value = h;
-  transferForm.toWarehouseId = h.warehouseId || "";
+  transferForm.toWarehouseId = "";
 }
 
 function openAccept(h: PileDto) {
@@ -377,10 +377,13 @@ async function submitTransfer() {
   if (!transferTarget.value) return;
   saving.value = true;
   try {
-    await pilesApi.transfer(transferTarget.value.id, {
+    const moved = await pilesApi.transfer(transferTarget.value.id, {
       toWarehouseId: transferForm.toWarehouseId,
     });
     transferTarget.value = null;
+    notifySuccess(
+      `Штабель ${moved.pileNumber} перенесен, создана партия ${moved.batchNumbers[0]}`,
+    );
     await load();
   } catch (e) {
     notifyError(errMsg(e));
@@ -571,7 +574,9 @@ onMounted(() => {
         </label>
       </div>
       <p class="muted">
-        При разделении штабеля автоматически создается новая партия. Её номер
+        При разделении штабеля автоматически создается новая партия, а объем
+        списывается со старых партий штабеля (сначала с самых ранних) в «Передано
+        в новую партию, т»; их первоначальный вес не меняется. Её номер
         присваивается системой по общему правилу «П-ГГММДД-№» и показан выше, но
         не забронирован: окончательный номер сообщается после сохранения. Кнопка
         «Изменить» разблокирует поле, чтобы задать свой номер.
@@ -664,15 +669,32 @@ onMounted(() => {
         <label class="full">
           Куда (склад)
           <select v-model="transferForm.toWarehouseId">
-            <option v-for="o in warehouseOptions" :key="o.id" :value="o.id">
+            <option value="" disabled>Выберите склад</option>
+            <option
+              v-for="o in warehouseOptions.filter(
+                (w) => w.id !== transferTarget?.warehouseId,
+              )"
+              :key="o.id"
+              :value="o.id"
+            >
               {{ o.label }}
             </option>
           </select>
         </label>
       </div>
+      <p class="muted">
+        Будет создана новая партия на весь объем штабеля
+        ({{ fmt(transferTarget.volume) }} т). Объем спишется со старых партий штабеля
+        в «Передано в новую партию, т».
+      </p>
       <div class="actions">
         <button class="secondary" @click="transferTarget = null">Отмена</button>
-        <button :disabled="saving" @click="submitTransfer">Трансфер</button>
+        <button
+          :disabled="saving || !transferForm.toWarehouseId"
+          @click="submitTransfer"
+        >
+          Трансфер
+        </button>
       </div>
     </Modal>
 

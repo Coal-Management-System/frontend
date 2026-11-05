@@ -23,6 +23,10 @@ import type {
   PileSplitRequest,
   PileTransferRequest,
   QualityHistoryRow,
+  QrActionCreateRequest,
+  QrActionDto,
+  QrActionExecuteRequest,
+  QrActionScanDto,
   QrPassportDto,
   WarehouseCreateRequest,
   WarehouseDto
@@ -150,11 +154,22 @@ export const dictionaryApi = {
       .then(() => undefined)
 }
 
-export const qrImageUrl = (type: 'batch' | 'pile' | 'movement', id: string) =>
+export const qrImageUrl = (type: 'batch' | 'pile' | 'movement' | 'action', id: string) =>
   `/api/qr/${type}/${id}.png`
 
 // Public (no login) read of the whole passport, for the page a plain phone
 // camera lands on after scanning the printed QR.
+export const qrActionsApi = {
+  list: (query: PageQuery = {}) =>
+    http.get<Page<QrActionDto>>('/qr-actions', { params: query }).then(r => r.data),
+  create: (req: QrActionCreateRequest) =>
+    http.post<QrActionDto>('/qr-actions', req).then(r => r.data),
+  scan: (id: string) => http.get<QrActionScanDto>(`/qr-actions/${id}`).then(r => r.data),
+  execute: (id: string, req: QrActionExecuteRequest) =>
+    http.post<QrActionDto>(`/qr-actions/${id}/execute`, req).then(r => r.data),
+  cancel: (id: string) => http.post<QrActionDto>(`/qr-actions/${id}/cancel`).then(r => r.data)
+}
+
 export const qrApi = {
   passport: (type: 'batch' | 'pile' | 'movement', id: string) =>
     http.get<QrPassportDto>(`/qr/${type}/${id}`).then(r => r.data)

@@ -10,6 +10,7 @@ import MovementsView from '@/views/MovementsView.vue'
 import DictionaryView from '@/views/DictionaryView.vue'
 import QrView from '@/views/QrView.vue'
 import QrResolveView from '@/views/QrResolveView.vue'
+import QrActionView from '@/views/QrActionView.vue'
 import { getToken } from '@/lib/session'
 
 const router = createRouter({
@@ -26,6 +27,8 @@ const router = createRouter({
     { path: '/movements', name: 'movements', component: MovementsView },
     { path: '/dictionary', name: 'dictionary', component: DictionaryView },
     { path: '/qr', name: 'qr', component: QrView },
+    // Needs a login, unlike the passport below: scanning this one changes volumes.
+    { path: '/qr/action/:id', name: 'qr-action', component: QrActionView, meta: { standalone: true } },
     { path: '/qr/:type/:id', name: 'qr-resolve', component: QrResolveView, meta: { public: true } }
   ]
 })

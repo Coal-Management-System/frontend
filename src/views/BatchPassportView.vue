@@ -396,6 +396,8 @@ function resetForm() {
           <dd>{{ fmt(batch.shippedVolume) }}</dd>
           <dt>Потери, т</dt>
           <dd>{{ fmt(batch.losses) }}</dd>
+          <dt>Передано в новую партию, т</dt>
+          <dd>{{ fmt(batch.transferredVolume) }}</dd>
         </dl>
         <p class="muted mt-3.5 mb-0 text-xs">
           Остальные объемы изменяются операциями движения продукции и не

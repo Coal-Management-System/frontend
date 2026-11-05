@@ -157,6 +157,9 @@ function statusClass(status: string | null | undefined): string {
           <div class="qr-apk__row">
             <span>Потери, т</span><b>{{ fmt(passport.batch.losses) }}</b>
           </div>
+          <div class="qr-apk__row">
+            <span>Передано в новую партию, т</span><b>{{ fmt(passport.batch.transferredVolume) }}</b>
+          </div>
         </section>
 
         <p class="qr-apk__section">История качества</p>

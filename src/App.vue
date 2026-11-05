@@ -17,6 +17,8 @@ const isLogin = computed(() => route.name === 'login')
 // (no sidebar/topbar). Decided from the stored token so a signed-in user never
 // sees a shell-less flash while loadMe() is still in flight.
 const isAnonymousPublic = computed(() => route.meta.public === true && !getToken())
+// A phone screen for an operator in the yard: no sidebar even when signed in.
+const isStandalone = computed(() => isAnonymousPublic.value || route.meta.standalone === true)
 const initials = computed(() => {
   const parts = (user.value?.fullName ?? '').split(/\s+/).filter(Boolean)
   if (!parts.length) return '—'
@@ -85,7 +87,7 @@ const today = new Date().toLocaleDateString('ru-RU', {
 
 <template>
   <RouterView v-if="isLogin" />
-  <template v-else-if="isAnonymousPublic">
+  <template v-else-if="isStandalone">
     <RouterView />
     <ToastHost />
   </template>
