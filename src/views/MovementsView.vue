@@ -7,7 +7,12 @@ import {
   movementsApi,
   qrImageUrl,
 } from "@/api/coal";
-import type { MovementCreateRequest, MovementDto, OptionDto } from "@/api/types";
+import type {
+  MovementCreateRequest,
+  MovementDto,
+  MovementOperation,
+  OptionDto,
+} from "@/api/types";
 import { errMsg, fmt, fmtDate, operationLabels } from "@/lib/format";
 import AutocompleteInput from "@/components/AutocompleteInput.vue";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal.vue";
@@ -52,6 +57,8 @@ async function confirmDelete(adminKey: string, text: string) {
   try {
     await movementsApi.remove(deleteTarget.value.id, adminKey, text);
     deleteTarget.value = null;
+    // The delete gave volumes back, so every remembered figure may be stale now.
+    for (const id of Object.keys(batchInfoCache)) delete batchInfoCache[id];
     await load();
   } catch (e) {
     notifyError(errMsg(e));
@@ -76,20 +83,47 @@ const form = reactive<
   originSource: "",
 });
 
-// Number + remaining volume of every party already looked up, so re-picking a
-// party costs no request.
+// Number + volumes of every party already looked up, so re-picking a party
+// costs no request.
 const batchInfoCache = reactive<
-  Record<string, { number: string; remaining: number }>
+  Record<string, { number: string; remaining: number; free: number }>
 >({});
-// Explains why the volume stayed empty for a party with no usable remainder.
+// Explains why the suggested volume is smaller than expected, or stayed empty.
 const volumeHint = ref("");
+
+// What each operation really does, shown before saving so nobody has to guess whether a
+// record moves volumes or only lands in the journal. Mirrors MovementService.apply.
+const operationEffects: Record<MovementOperation, string> = {
+  PROCESSING:
+    "Увеличивает «Объем в переработке, т», уменьшает свободный объем партии и объем штабеля — уголь ушел на обогащение.",
+  SHIPMENT:
+    "Увеличивает «Объем отгруженной продукции, т», уменьшает текущий остаток партии и объем штабеля.",
+  ANALYSIS:
+    "Журнальная запись: объемы партии и штабеля не меняются.",
+  RESERVATION:
+    "Увеличивает «Зарезервированный объем, т» и уменьшает свободный объем партии; уголь остается лежать в штабеле.",
+  BLENDING:
+    "Журнальная запись: объемы партии и штабеля не меняются.",
+  PILE_CREATED:
+    "Журнальная запись: штабель создается на странице «Штабели».",
+  PILE_MERGED:
+    "Журнальная запись: слияние выполняется на странице «Штабели».",
+  PILE_SPLIT:
+    "Журнальная запись: разделение выполняется на странице «Штабели».",
+  PILE_TRANSFERRED:
+    "Журнальная запись: перемещение штабеля между складами выполняется кнопкой «Трансфер» на странице «Штабели».",
+  BATCH_ACCEPTED_INTO_PILE:
+    "Приём партии в штабель выполняется на странице «Штабели» — там объем прибавляется к штабелю и списывается с остатка партии.",
+};
 
 function round2(v: number) {
   return Math.round(v * 100) / 100;
 }
 
-// Picking a party fills «Объем, т» with what is actually left of it (the same
-// «Остаток партии, т» the parties list shows); clearing the party empties it.
+// Picking a party fills «Объем, т» with what can actually be moved; clearing the
+// party empties it. With a pile named that is the party's free volume. Without one
+// only coal outside piles qualifies (the «Остаток партии, т» of the parties list),
+// unless the operation is a reservation, which leaves the coal where it lies.
 async function syncVolumeFromBatch() {
   const id = form.batchId;
   if (!id) {
@@ -103,6 +137,7 @@ async function syncVolumeFromBatch() {
       batchInfoCache[id] = {
         number: b.batchNumber,
         remaining: b.remainingVolume ?? 0,
+        free: b.freeVolume ?? 0,
       };
     } catch (e) {
       // Leave whatever the user typed rather than clearing it on a failed lookup.
@@ -110,20 +145,28 @@ async function syncVolumeFromBatch() {
       return;
     }
   }
-  const { number, remaining } = batchInfoCache[id];
-  if (remaining > 0) {
-    form.volume = round2(remaining);
-    volumeHint.value = "";
-  } else {
-    // Legacy parties can have a zero or negative remainder; the backend rejects a
-    // non-positive volume, so nothing is filled in and the user decides.
+  const { number, remaining, free } = batchInfoCache[id];
+  const fromAnywhere = !!form.pileId || form.operation === "RESERVATION";
+  const usable = fromAnywhere ? free : Math.min(remaining, free);
+  if (usable > 0) {
+    form.volume = round2(usable);
+    volumeHint.value =
+      usable < free
+        ? `Вне штабелей у партии ${number} — ${fmt(usable)} т, свободно всего ${fmt(free)} т: чтобы взять больше, выберите штабель.`
+        : "";
+  } else if (free > 0) {
+    // All of the free coal lies in piles, so a movement without a pile would be refused.
     form.volume = null;
-    volumeHint.value = `У партии ${number} нет остатка — укажите объем вручную.`;
+    volumeHint.value = `Партия ${number} лежит в штабеле (свободно ${fmt(free)} т) — выберите штабель.`;
+  } else {
+    // The backend rejects a non-positive volume, so nothing is filled in.
+    form.volume = null;
+    volumeHint.value = `У партии ${number} нет свободного объема.`;
   }
 }
 
 watch(
-  () => form.batchId,
+  () => [form.batchId, form.pileId, form.operation],
   () => {
     void syncVolumeFromBatch();
   },
@@ -366,10 +409,11 @@ onMounted(() => {
           <input v-model="form.originSource" />
         </label>
       </div>
+      <p class="muted">{{ operationEffects[form.operation] }}</p>
       <p v-if="volumeHint" class="muted">{{ volumeHint }}</p>
       <p v-else class="muted">
-        Объем подставляется автоматически из остатка выбранной партии
-        («Остаток партии, т»); при смене партии значение пересчитывается.
+        Объем подставляется автоматически из доступного объема партии; при смене
+        партии, штабеля или операции значение пересчитывается.
       </p>
       <div class="actions">
         <button class="secondary" @click="showCreate = false">Отмена</button>
@@ -383,7 +427,7 @@ onMounted(() => {
       :confirm-label="deleteTarget.operation"
       :confirm-prompt="`Введите код операции «${deleteTarget.operation}» для подтверждения`"
       :busy="deleting"
-      warning="Движение будет удалено безвозвратно. Если это приём партии в штабель, удалённый объём вернётся в остаток партии."
+      warning="Движение будет удалено безвозвратно. Если оно меняло объёмы партии и штабеля, они будут возвращены обратно. Удалённый приём партии в штабель возвращает объём в остаток партии."
       @close="deleteTarget = null"
       @confirm="confirmDelete"
     />
