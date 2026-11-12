@@ -10,6 +10,7 @@ export type Section =
   | 'movements'
   | 'dictionary'
   | 'qr'
+  | 'activity'
 
 const ALL: Section[] = [
   'dashboard',
@@ -19,8 +20,12 @@ const ALL: Section[] = [
   'piles',
   'movements',
   'dictionary',
-  'qr'
+  'qr',
+  'activity'
 ]
+
+// Sections only the admin may open, whatever roleSections says.
+const ADMIN_ONLY: Section[] = ['activity']
 
 // Roles not listed here see every section. This hides menus and blocks the
 // pages in the browser only; the backend API does not check roles yet.
@@ -30,7 +35,8 @@ const roleSections: Partial<Record<UserRole, Section[]>> = {
 }
 
 export function sectionsFor(role: UserRole): Section[] {
-  return roleSections[role] ?? ALL
+  const sections = roleSections[role] ?? ALL
+  return role === 'ADMIN' ? sections : sections.filter(s => !ADMIN_ONLY.includes(s))
 }
 
 export function canSee(role: UserRole | undefined, section: Section): boolean {

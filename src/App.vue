@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
 import { useAuth } from '@/composables/useAuth'
@@ -7,6 +7,7 @@ import { useTheme } from '@/composables/useTheme'
 import { getToken } from '@/lib/session'
 import { roleLabels, shiftLabels } from '@/lib/format'
 import { canSee, type Section } from '@/lib/access'
+import { activityApi } from '@/api/coal'
 
 const route = useRoute()
 const router = useRouter()
@@ -84,8 +85,33 @@ const nav = [
     section: 'qr' as Section,
     label: 'QR-кодирование',
     icon: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2.5v2.5H14zM17.5 17.5H20V20h-2.5z'
+  },
+  {
+    to: '/activity',
+    section: 'activity' as Section,
+    label: 'Журнал действий',
+    icon: 'M12 7.5V12l3 2M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4v4h4'
   }
 ]
+
+// Pages outside the menu, named for the activity journal.
+const extraTitles: Record<string, string> = {
+  'batch-passport': 'Паспорт партии',
+  'qr-action': 'QR-задание'
+}
+
+// Every page a signed-in user opens goes to the admin activity journal
+// (the server drops repeats of the same page within a few minutes).
+watch(
+  () => route.path,
+  path => {
+    if (!getToken() || route.meta.public || route.name === 'login' || !route.name) return
+    const title =
+      nav.find(n => n.to === path)?.label ?? extraTitles[String(route.name)] ?? path
+    void activityApi.visit(path, title)
+  },
+  { immediate: true }
+)
 
 const visibleNav = computed(() => nav.filter(n => canSee(user.value?.role, n.section)))
 

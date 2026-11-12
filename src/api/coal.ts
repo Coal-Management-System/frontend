@@ -1,5 +1,7 @@
 import { http } from './client'
 import type {
+  ActivityDto,
+  ActivityFilter,
   AnalysisCreateRequest,
   AnalysisDto,
   BatchCreateRequest,
@@ -173,4 +175,13 @@ export const qrActionsApi = {
 export const qrApi = {
   passport: (type: 'batch' | 'pile' | 'movement', id: string) =>
     http.get<QrPassportDto>(`/qr/${type}/${id}`).then(r => r.data)
+}
+
+export const activityApi = {
+  list: (query: PageQuery & ActivityFilter = {}) =>
+    http.get<Page<ActivityDto>>('/activity', { params: query }).then(r => r.data),
+  users: () => http.get<string[]>('/activity/users').then(r => r.data),
+  /** Fire-and-forget: a lost visit entry is not worth bothering the user about. */
+  visit: (path: string, title: string) =>
+    http.post<void>('/activity/visit', { path, title }).then(() => undefined, () => undefined)
 }

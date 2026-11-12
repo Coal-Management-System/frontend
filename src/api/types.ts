@@ -369,3 +369,23 @@ export interface QrActionExecuteRequest {
   pileId: string
   volume: number
 }
+
+export type ActivityKind = 'LOGIN' | 'LOGOUT' | 'VISIT' | 'CREATE' | 'UPDATE' | 'DELETE' | 'ACTION'
+
+export interface ActivityDto {
+  id: string
+  createdAt: string
+  username: string
+  fullName: string | null
+  kind: ActivityKind
+  entityType: string | null
+  entityLabel: string | null
+  summary: string
+}
+
+export interface ActivityFilter {
+  username?: string
+  kind?: ActivityKind | ''
+  from?: string
+  to?: string
+}

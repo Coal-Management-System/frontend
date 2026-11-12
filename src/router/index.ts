@@ -11,6 +11,7 @@ import DictionaryView from '@/views/DictionaryView.vue'
 import QrView from '@/views/QrView.vue'
 import QrResolveView from '@/views/QrResolveView.vue'
 import QrActionView from '@/views/QrActionView.vue'
+import ActivityView from '@/views/ActivityView.vue'
 import { getToken } from '@/lib/session'
 import { useAuth } from '@/composables/useAuth'
 import { canSee, sectionsFor, type Section } from '@/lib/access'
@@ -31,7 +32,8 @@ const sectionPaths: Record<Section, string> = {
   piles: '/piles',
   movements: '/movements',
   dictionary: '/dictionary',
-  qr: '/qr'
+  qr: '/qr',
+  activity: '/activity'
 }
 
 const router = createRouter({
@@ -48,6 +50,7 @@ const router = createRouter({
     { path: '/movements', name: 'movements', component: MovementsView, meta: { section: 'movements' } },
     { path: '/dictionary', name: 'dictionary', component: DictionaryView, meta: { section: 'dictionary' } },
     { path: '/qr', name: 'qr', component: QrView, meta: { section: 'qr' } },
+    { path: '/activity', name: 'activity', component: ActivityView, meta: { section: 'activity' } },
     // Needs a login, unlike the passport below: scanning this one changes volumes.
     { path: '/qr/action/:id', name: 'qr-action', component: QrActionView, meta: { standalone: true, section: 'qr' } },
     { path: '/qr/:type/:id', name: 'qr-resolve', component: QrResolveView, meta: { public: true } }
