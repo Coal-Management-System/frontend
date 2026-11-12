@@ -4,9 +4,12 @@ import { RouterLink } from "vue-router";
 import { dashboardApi } from "@/api/coal";
 import type { DashboardDto } from "@/api/types";
 import { fmt } from "@/lib/format";
+import { useAuth } from "@/composables/useAuth";
+import { canSee } from "@/lib/access";
 import StatCard from "@/components/dashboard/StatCard.vue";
 import StatSection from "@/components/dashboard/StatSection.vue";
 
+const { user } = useAuth();
 const dash = ref<DashboardDto | null>(null);
 const error = ref("");
 const cardsRoot = ref<HTMLElement | null>(null);
@@ -61,6 +64,7 @@ onMounted(async () => {
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
       <h1>Общая информация</h1>
       <RouterLink
+        v-if="canSee(user?.role, 'batches')"
         to="/batches"
         class="inline-flex items-center rounded-[10px] border border-line bg-neon-blue/8 px-3.5 py-2 text-[0.85rem] font-semibold text-ink transition-colors hover:border-neon-cyan/50 hover:text-neon-cyan"
       >

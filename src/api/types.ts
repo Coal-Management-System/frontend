@@ -289,7 +289,16 @@ export interface QrPassportDto {
   analyses: AnalysisDto[]
 }
 
-export type UserRole = 'ADMIN' | 'MANAGER' | 'USER'
+export type UserRole =
+  | 'ADMIN'
+  | 'LAB_TECHNICIAN'
+  | 'PRODUCTION_STAFF'
+  | 'STOREKEEPER'
+  | 'WAREHOUSE_OPERATOR'
+  | 'DISPATCHER'
+  | 'PRODUCTION_HEAD'
+  | 'COMMERCIAL'
+  | 'MANAGEMENT'
 export type UserShift = 'A' | 'B'
 
 export interface AuthUserDto {

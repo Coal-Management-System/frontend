@@ -762,6 +762,43 @@
     button[type="submit"] {
       margin-top: 0.3rem;
     }
+    .password-field {
+      position: relative;
+      display: flex;
+
+      input {
+        flex: 1;
+        padding-right: 2.4rem;
+      }
+    }
+    .password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 0.35rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: $mute;
+      box-shadow: none;
+      transform: translateY(-50%);
+
+      &:hover {
+        color: $ink;
+        box-shadow: none;
+      }
+      &:focus-visible {
+        outline: 2px solid var(--focus-ring);
+      }
+      svg {
+        @include icon-strokes(17px, 1.7);
+      }
+    }
     .muted {
       margin: 0;
       font-size: 0.75rem;

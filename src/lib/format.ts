@@ -68,8 +68,14 @@ export const warehouseStatusLabels: Record<WarehouseStatus, string> = {
 
 export const roleLabels: Record<UserRole, string> = {
   ADMIN: 'Администратор',
-  MANAGER: 'Менеджер',
-  USER: 'Пользователь'
+  LAB_TECHNICIAN: 'Лаборант',
+  PRODUCTION_STAFF: 'Производственный персонал',
+  STOREKEEPER: 'Кладовщик',
+  WAREHOUSE_OPERATOR: 'Оператор склада',
+  DISPATCHER: 'Диспетчер',
+  PRODUCTION_HEAD: 'Руководитель производства',
+  COMMERCIAL: 'Коммерческий отдел',
+  MANAGEMENT: 'Руководство'
 }
 
 export const shiftLabels: Record<UserShift, string> = {
