@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from "vue";
 const emit = defineEmits<{ close: [] }>();
-defineProps<{ title: string }>();
+// `wide` turns the dialog into a near-full-screen panel (e.g. for graphs).
+defineProps<{ title: string; wide?: boolean }>();
 
 function onKeydown(e: KeyboardEvent) {
   if (e.key === "Escape") {
@@ -16,7 +17,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
 
 <template>
   <div class="modal-backdrop" @click.self="$emit('close')">
-    <div class="modal">
+    <div class="modal" :class="{ 'modal--wide': wide }">
       <h2>{{ title }}</h2>
       <slot />
     </div>

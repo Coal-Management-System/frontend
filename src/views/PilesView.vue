@@ -701,6 +701,8 @@ onMounted(() => {
     <Modal
       v-if="historyTarget"
       :title="`История штабеля ${historyTarget.pileNumber}`"
+      class="history-modal"
+      :wide="historyView === 'graph'"
       @close="historyTarget = null"
     >
       <div class="seg mb-4">
@@ -708,7 +710,6 @@ onMounted(() => {
           type="button"
           :class="{ active: historyView === 'list' }"
           @click="historyView = 'list'"
-          class="text-white"
         >
           Движения
         </button>
@@ -716,7 +717,6 @@ onMounted(() => {
           type="button"
           :class="{ active: historyView === 'graph' }"
           @click="showGraph"
-          class="text-white"
         >
           Граф происхождения
         </button>
@@ -747,7 +747,7 @@ onMounted(() => {
           </tbody>
         </table>
       </div>
-      <div v-else>
+      <div v-else class="graph-pane">
         <p v-if="lineageLoading" class="muted">Загрузка графа…</p>
         <LineageGraph
           v-else-if="lineage"
@@ -774,33 +774,49 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* In the wide modal the graph takes all height left between the switch and the actions. */
+.graph-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.graph-pane > * {
+  flex: 1;
+  min-height: 0;
+}
+.graph-pane > p {
+  flex: 0;
+}
+
 /* Segmented switch between the movements table and the provenance graph. */
 .seg {
   display: inline-flex;
   gap: 4px;
   padding: 4px;
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--calm-border);
   border-radius: 12px;
-  background: rgba(5, 9, 20, 0.4);
+  background: var(--calm-seg-bg);
 }
 .seg button {
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--calm-mute);
   padding: 6px 14px;
   border-radius: 9px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
+  box-shadow: none;
   transition:
     background 0.15s,
     color 0.15s;
 }
 .seg button:hover {
-  color: var(--color-ink);
+  color: var(--calm-ink);
 }
 .seg button.active {
-  background: rgba(96, 165, 250, 0.16);
-  color: #fff;
+  background: var(--calm-seg-active);
+  color: var(--calm-ink);
 }
 </style>

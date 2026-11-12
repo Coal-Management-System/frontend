@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { LineageEdgeDto, LineageNodeDto } from "@/api/types";
 
 /**
@@ -146,14 +146,44 @@ function typeCaption(n: { type: string }) {
 // The graph is usually wider than the modal, so bring the highlighted pile
 // into view instead of leaving the user at the leftmost column.
 const scrollBox = ref<HTMLElement | null>(null);
+
+// Zoom the graph to fill its container (e.g. the full-screen history modal).
+// Never shrink below natural size — a big graph scrolls instead — and cap the
+// zoom so a two-node graph doesn't turn into giant boxes.
+const MAX_ZOOM = 2;
+const boxSize = ref({ w: 0, h: 0 });
+const zoom = computed(() => {
+  const l = layout.value;
+  const { w, h } = boxSize.value;
+  if (!l || !w || !h) return 1;
+  const fit = Math.min((w - 10) / l.width, (h - 10) / l.height);
+  return Math.max(1, Math.min(MAX_ZOOM, fit));
+});
+
+let observer: ResizeObserver | null = null;
+function observe(box: HTMLElement | null) {
+  observer?.disconnect();
+  if (!box) return;
+  observer = new ResizeObserver(() => {
+    boxSize.value = { w: box.clientWidth, h: box.clientHeight };
+  });
+  observer.observe(box);
+}
+watch(scrollBox, observe);
+onBeforeUnmount(() => observer?.disconnect());
+
 function centerCurrent() {
   const box = scrollBox.value;
   const node = layout.value?.laid.find((n) => n.current);
   if (!box || !node) return;
-  box.scrollLeft = node.x + NODE_W / 2 - box.clientWidth / 2;
+  box.scrollLeft = (node.x + NODE_W / 2) * zoom.value - box.clientWidth / 2;
+  box.scrollTop = (node.y + NODE_H / 2) * zoom.value - box.clientHeight / 2;
 }
-watch(layout, () => void nextTick(centerCurrent));
-onMounted(centerCurrent);
+watch([layout, zoom], () => void nextTick(centerCurrent));
+onMounted(() => {
+  observe(scrollBox.value);
+  centerCurrent();
+});
 </script>
 
 <template>
@@ -161,8 +191,8 @@ onMounted(centerCurrent);
     <div v-if="!layout" class="muted">Связей пока нет</div>
     <div v-else ref="scrollBox" class="lineage-scroll">
       <svg
-        :width="layout.width"
-        :height="layout.height"
+        :width="layout.width * zoom"
+        :height="layout.height * zoom"
         :viewBox="`0 0 ${layout.width} ${layout.height}`"
         role="img"
         aria-label="Граф происхождения штабеля"
@@ -246,56 +276,64 @@ onMounted(centerCurrent);
   flex-direction: column;
   gap: 10px;
 }
+/* Grows to fill the parent when the parent gives it height (wide modal). */
 .lineage-scroll {
-  overflow-x: auto;
-  border: 1px solid var(--color-line-faint);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: auto;
+  border: 1px solid var(--calm-border);
   border-radius: 12px;
-  background: rgba(5, 9, 20, 0.4);
+  background: var(--calm-canvas);
   padding: 4px;
+}
+/* margin:auto centres a small graph but keeps a large one scrollable from its edge. */
+.lineage-scroll > svg {
+  flex: none;
+  margin: auto;
 }
 .edge {
   fill: none;
-  stroke: var(--color-line-strong);
+  stroke: var(--calm-edge);
   stroke-width: 1.6;
 }
 .arrow-head {
-  fill: var(--color-chart);
+  fill: var(--calm-arrow);
 }
 .node {
   stroke-width: 1.4;
 }
 .node.batch {
-  fill: rgba(34, 211, 238, 0.08);
-  stroke: rgba(34, 211, 238, 0.45);
+  fill: var(--calm-batch-fill);
+  stroke: var(--calm-batch-stroke);
 }
 .node.pile {
-  fill: rgba(167, 139, 250, 0.08);
-  stroke: rgba(167, 139, 250, 0.5);
+  fill: var(--calm-pile-fill);
+  stroke: var(--calm-pile-stroke);
 }
 .node.current {
-  fill: var(--color-neon-amber);
-  stroke: #fde68a;
-  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.45));
+  fill: var(--calm-current-fill);
+  stroke: var(--calm-current-stroke);
 }
 .node-caption {
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  fill: var(--color-mute-2);
+  fill: var(--calm-mute);
 }
 .node-label {
   font-size: 13px;
   font-weight: 600;
-  fill: var(--color-ink);
+  fill: var(--calm-ink);
 }
 .node-caption.current,
 .node-label.current {
-  fill: #1c1503;
+  fill: var(--calm-current-ink);
 }
 .dots {
   font-size: 18px;
   font-weight: 700;
-  fill: var(--color-mute-2);
+  fill: var(--calm-mute);
 }
 .legend {
   display: flex;
@@ -303,7 +341,7 @@ onMounted(centerCurrent);
   gap: 14px;
   align-items: center;
   font-size: 12px;
-  color: var(--color-mute);
+  color: var(--calm-mute);
 }
 .legend-item {
   display: inline-flex;
@@ -317,15 +355,15 @@ onMounted(centerCurrent);
   display: inline-block;
 }
 .swatch.batch {
-  background: rgba(34, 211, 238, 0.25);
-  border: 1px solid rgba(34, 211, 238, 0.6);
+  background: var(--calm-batch-fill);
+  border: 1px solid var(--calm-batch-stroke);
 }
 .swatch.pile {
-  background: rgba(167, 139, 250, 0.25);
-  border: 1px solid rgba(167, 139, 250, 0.6);
+  background: var(--calm-pile-fill);
+  border: 1px solid var(--calm-pile-stroke);
 }
 .swatch.current {
-  background: var(--color-neon-amber);
-  border: 1px solid #fde68a;
+  background: var(--calm-current-fill);
+  border: 1px solid var(--calm-current-stroke);
 }
 </style>

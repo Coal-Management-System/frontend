@@ -438,6 +438,19 @@
       font-size: 1.1rem;
     }
   }
+  /* Pile history modal: flat, low-contrast surface instead of the neon glass. */
+  .history-modal .modal {
+    background: var(--calm-modal-bg);
+    border-color: var(--calm-border);
+    box-shadow: var(--calm-shadow);
+    color: var(--calm-ink);
+  }
+  .modal.modal--wide {
+    width: min(1800px, 94vw);
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
