@@ -15,7 +15,14 @@ export const batchStatusLabels: Record<BatchStatus, string> = {
   IN_PROCESSING: 'В переработке',
   READY_FOR_SHIPMENT: 'Готова к отгрузке',
   SHIPPED: 'Отгружена',
-  ARCHIVED: 'В архиве'
+  ARCHIVED: 'В архиве',
+  SOLD: 'Продана',
+  WRITTEN_OFF: 'Списана'
+}
+
+/** Sold / written-off: the last status a party can have; the backend refuses to change it. */
+export function isFinalBatchStatus(status: BatchStatus): boolean {
+  return status === 'SOLD' || status === 'WRITTEN_OFF'
 }
 
 export const originLabels: Record<OriginType, string> = {

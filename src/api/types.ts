@@ -1,4 +1,11 @@
-export type BatchStatus = 'NEW' | 'IN_PROCESSING' | 'READY_FOR_SHIPMENT' | 'SHIPPED' | 'ARCHIVED'
+export type BatchStatus =
+  | 'NEW'
+  | 'IN_PROCESSING'
+  | 'READY_FOR_SHIPMENT'
+  | 'SHIPPED'
+  | 'ARCHIVED'
+  | 'SOLD'
+  | 'WRITTEN_OFF'
 export type OriginType = 'OWN_MINING' | 'PURCHASED'
 export type PileStatus = 'ACTIVE' | 'SPLIT' | 'MERGED' | 'TRANSFERRED' | 'EMPTY'
 export type MovementOperation =

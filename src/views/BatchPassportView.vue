@@ -12,6 +12,7 @@ import type {
 } from "@/api/types";
 import {
   batchStatusLabels,
+  isFinalBatchStatus,
   errMsg,
   fmt,
   fmtDate,
@@ -155,7 +156,19 @@ onMounted(async () => {
   }
 });
 
-async function save() {
+// Choosing «Продана» / «Списана» is one-way, so it is confirmed before saving.
+const confirmFinal = ref(false);
+function save() {
+  if (!batch.value) return;
+  if (isFinalBatchStatus(form.status) && !isFinalBatchStatus(batch.value.status)) {
+    confirmFinal.value = true;
+    return;
+  }
+  void doSave();
+}
+
+async function doSave() {
+  confirmFinal.value = false;
   if (!batch.value) return;
   saving.value = true;
   saved.value = false;
@@ -197,7 +210,12 @@ function resetForm() {
     <p v-if="error" class="error">{{ error }}</p>
     <template v-else-if="batch">
       <div class="toolbar">
-        <h1>Паспорт партии № {{ batch.batchNumber }}</h1>
+        <h1 class="flex items-center gap-3 flex-wrap">
+          Паспорт партии № {{ batch.batchNumber }}
+          <span class="status-word text-sm" :class="`st-${batch.status}`">
+            {{ batchStatusLabels[batch.status] }}
+          </span>
+        </h1>
         <div class="actions">
           <span v-if="saved" class="hint">Изменения сохранены</span>
           <button class="secondary" :disabled="saving" @click="resetForm">
@@ -255,6 +273,25 @@ function resetForm() {
         </template>
       </Modal>
 
+      <Modal
+        v-if="confirmFinal"
+        :title="`Партия № ${batch.batchNumber}: ${batchStatusLabels[form.status].toLowerCase()}`"
+        @close="confirmFinal = false"
+      >
+        <p>
+          Статус «{{ batchStatusLabels[form.status] }}» — окончательный. После
+          сохранения его нельзя будет изменить, а партию нельзя будет использовать
+          в движениях, приёме в штабель и QR-заданиях. Объемы партии останутся как
+          есть.
+        </p>
+        <div class="actions">
+          <button class="secondary" @click="confirmFinal = false">Отмена</button>
+          <button class="danger" :disabled="saving" @click="doSave">
+            Да, {{ form.status === "SOLD" ? "продать" : "списать" }}
+          </button>
+        </div>
+      </Modal>
+
       <!-- One long page, no tabs: every block stacked, the user scrolls. -->
       <section class="panel">
         <h2>Общая информация</h2>
@@ -269,7 +306,12 @@ function resetForm() {
           </label>
           <label>
             Текущий статус
-            <select v-model="form.status">
+            <select
+              v-model="form.status"
+              class="status-select"
+              :class="`st-${form.status}`"
+              :disabled="isFinalBatchStatus(batch.status)"
+            >
               <option
                 v-for="(label, key) in batchStatusLabels"
                 :key="key"
@@ -290,6 +332,10 @@ function resetForm() {
         </div>
         <p class="muted mt-3.5 mb-0 text-xs">
           Дата создания: {{ fmtDate(batch.createdAt) }}
+        </p>
+        <p v-if="isFinalBatchStatus(batch.status)" class="hint mt-2 mb-0 text-xs">
+          Партия {{ batchStatusLabels[batch.status].toLowerCase() }}: статус
+          окончательный и больше не меняется.
         </p>
       </section>
 

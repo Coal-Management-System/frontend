@@ -80,6 +80,30 @@
   --calm-current-fill: #d6b073;
   --calm-current-stroke: #e6c993;
   --calm-current-ink: #2a2113;
+
+  /* party status row tints (parties table): faint wash + left edge */
+  --st-new-bg: rgba(56, 189, 248, 0.07);
+  --st-new-edge: rgba(56, 189, 248, 0.55);
+  --st-processing-bg: rgba(245, 158, 11, 0.07);
+  --st-processing-edge: rgba(245, 158, 11, 0.55);
+  --st-ready-bg: rgba(34, 197, 94, 0.07);
+  --st-ready-edge: rgba(34, 197, 94, 0.55);
+  --st-shipped-bg: rgba(139, 92, 246, 0.07);
+  --st-shipped-edge: rgba(139, 92, 246, 0.55);
+  --st-archived-bg: rgba(148, 163, 184, 0.07);
+  --st-archived-edge: rgba(148, 163, 184, 0.55);
+  --st-sold-bg: rgba(20, 184, 166, 0.07);
+  --st-sold-edge: rgba(20, 184, 166, 0.55);
+  --st-writtenoff-bg: rgba(244, 63, 94, 0.07);
+  --st-writtenoff-edge: rgba(244, 63, 94, 0.55);
+  /* status word colour: deep enough to read the status at a glance */
+  --st-new-ink: #7dd3fc;
+  --st-processing-ink: #fbbf24;
+  --st-ready-ink: #4ade80;
+  --st-shipped-ink: #c4b5fd;
+  --st-archived-ink: #cbd5e1;
+  --st-sold-ink: #2dd4bf;
+  --st-writtenoff-ink: #fb7185;
 }
 
 html[data-theme="light"] {
@@ -182,4 +206,27 @@ html[data-theme="light"] {
   --calm-current-fill: #f2dcb0;
   --calm-current-stroke: #c9a35c;
   --calm-current-ink: #3b2c10;
+
+  /* party status row tints, light values */
+  --st-new-bg: rgba(56, 189, 248, 0.1);
+  --st-new-edge: rgba(56, 189, 248, 0.7);
+  --st-processing-bg: rgba(245, 158, 11, 0.1);
+  --st-processing-edge: rgba(245, 158, 11, 0.7);
+  --st-ready-bg: rgba(34, 197, 94, 0.1);
+  --st-ready-edge: rgba(34, 197, 94, 0.7);
+  --st-shipped-bg: rgba(139, 92, 246, 0.1);
+  --st-shipped-edge: rgba(139, 92, 246, 0.7);
+  --st-archived-bg: rgba(148, 163, 184, 0.1);
+  --st-archived-edge: rgba(148, 163, 184, 0.7);
+  --st-sold-bg: rgba(20, 184, 166, 0.1);
+  --st-sold-edge: rgba(20, 184, 166, 0.7);
+  --st-writtenoff-bg: rgba(244, 63, 94, 0.1);
+  --st-writtenoff-edge: rgba(244, 63, 94, 0.7);
+  --st-new-ink: #0369a1;
+  --st-processing-ink: #b45309;
+  --st-ready-ink: #15803d;
+  --st-shipped-ink: #6d28d9;
+  --st-archived-ink: #475569;
+  --st-sold-ink: #0f766e;
+  --st-writtenoff-ink: #be123c;
 }

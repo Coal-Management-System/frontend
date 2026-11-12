@@ -237,14 +237,16 @@ onMounted(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="b in rows" :key="b.id">
+            <tr v-for="b in rows" :key="b.id" :class="`st-${b.status}`">
               <td>{{ b.batchNumber }}</td>
               <td>{{ originLabels[b.originType] }}</td>
               <td>{{ originOf(b) }}</td>
               <td>{{ fmtDate(b.minedAt) }}</td>
               <td>{{ fmt(b.remainingVolume) }}</td>
               <td>{{ b.storageLocations.join(", ") || "—" }}</td>
-              <td>{{ batchStatusLabels[b.status] }}</td>
+              <td>
+                <span class="status-word">{{ batchStatusLabels[b.status] }}</span>
+              </td>
               <td>
                 <RouterLink :to="`/batches/${b.id}`" class="btn">
                   Паспорт
@@ -388,3 +390,18 @@ onMounted(() => {
     </Modal>
   </div>
 </template>
+
+<style scoped>
+/* Light background per party status (colours set by the global .st-* classes);
+   the left edge keeps it readable when hovering. */
+tr[class^="st-"] td:first-child {
+  box-shadow: inset 3px 0 0 var(--row-edge);
+}
+tr[class^="st-"] td {
+  background: var(--row-bg);
+}
+/* Hover still wins, as on every other table. */
+tbody tr[class^="st-"]:hover td {
+  background: linear-gradient(var(--hover-wash), var(--hover-wash)), var(--row-bg);
+}
+</style>

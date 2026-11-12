@@ -47,6 +47,8 @@ function statusClass(status: string | null | undefined): string {
       return 'qr-apk__value--green'
     case 'SHIPPED':
     case 'ARCHIVED':
+    case 'SOLD':
+    case 'WRITTEN_OFF':
       return 'qr-apk__value--mute'
     default:
       return ''
