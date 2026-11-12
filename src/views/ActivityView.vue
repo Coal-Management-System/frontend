@@ -2,7 +2,7 @@
 import { onMounted, reactive, ref } from "vue";
 import { activityApi } from "@/api/coal";
 import type { ActivityDto, ActivityFilter, ActivityKind } from "@/api/types";
-import { fmtDate } from "@/lib/format";
+import { activityKindLabels, fmtDate } from "@/lib/format";
 import Pagination from "@/components/Pagination.vue";
 import { usePagedList } from "@/composables/usePagedList";
 
@@ -14,15 +14,7 @@ const filter = reactive<Required<ActivityFilter>>({
   to: "",
 });
 
-const kindLabels: Record<ActivityKind, string> = {
-  LOGIN: "Вход",
-  LOGOUT: "Выход",
-  VISIT: "Просмотр страницы",
-  CREATE: "Создание",
-  UPDATE: "Изменение",
-  DELETE: "Удаление",
-  ACTION: "Операция",
-};
+const kindLabels = activityKindLabels;
 const kinds = Object.keys(kindLabels) as ActivityKind[];
 
 const {
@@ -163,32 +155,5 @@ onMounted(async () => {
   flex-direction: column;
   gap: 4px;
   min-width: 170px;
-}
-/* Small tinted tag per action type, in the calm palette so it stays easy on the eye. */
-.kind {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  white-space: nowrap;
-  border: 1px solid var(--calm-border);
-  background: var(--calm-seg-bg);
-  color: var(--calm-mute);
-}
-.kind.create {
-  background: var(--calm-batch-fill);
-  border-color: var(--calm-batch-stroke);
-  color: var(--calm-ink);
-}
-.kind.update,
-.kind.action {
-  background: var(--calm-pile-fill);
-  border-color: var(--calm-pile-stroke);
-  color: var(--calm-ink);
-}
-.kind.delete {
-  background: var(--error-bg);
-  border-color: var(--error-border);
-  color: var(--calm-ink);
 }
 </style>

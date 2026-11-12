@@ -8,6 +8,7 @@ import { useAuth } from "@/composables/useAuth";
 import { canSee } from "@/lib/access";
 import StatCard from "@/components/dashboard/StatCard.vue";
 import StatSection from "@/components/dashboard/StatSection.vue";
+import RecentActivity from "@/components/dashboard/RecentActivity.vue";
 
 const { user } = useAuth();
 const dash = ref<DashboardDto | null>(null);
@@ -189,5 +190,8 @@ onMounted(async () => {
       </div>
     </div>
     <p v-else class="text-sm text-mute">Загрузка…</p>
+
+    <!-- Admin only: the journal API refuses everyone else. -->
+    <RecentActivity v-if="canSee(user?.role, 'activity')" class="mt-8" />
   </div>
 </template>

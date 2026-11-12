@@ -845,4 +845,33 @@
     border-color: var(--row-edge);
     background-color: var(--row-bg);
   }
+
+  /* ---------- activity journal type tag (journal page + dashboard) ---------- */
+  /* Small tinted tag per action type, in the calm palette so it stays easy on the eye. */
+  .kind {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    white-space: nowrap;
+    border: 1px solid var(--calm-border);
+    background: var(--calm-seg-bg);
+    color: var(--calm-mute);
+  }
+  .kind.create {
+    background: var(--calm-batch-fill);
+    border-color: var(--calm-batch-stroke);
+    color: var(--calm-ink);
+  }
+  .kind.update,
+  .kind.action {
+    background: var(--calm-pile-fill);
+    border-color: var(--calm-pile-stroke);
+    color: var(--calm-ink);
+  }
+  .kind.delete {
+    background: var(--error-bg);
+    border-color: var(--error-border);
+    color: var(--calm-ink);
+  }
 }

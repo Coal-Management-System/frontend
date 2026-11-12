@@ -1,4 +1,5 @@
 import type {
+  ActivityKind,
   AnalysisStage,
   BatchStatus,
   PileStatus,
@@ -137,4 +138,15 @@ export function errMsg(e: unknown): string {
   const anyE = e as { response?: { data?: { message?: string } }; message?: string }
   const raw = anyE?.response?.data?.message || anyE?.message || 'Ошибка запроса'
   return raw.replace(/[A-Za-z][A-Za-z0-9_]*/g, (token) => fieldLabels[token] ?? token)
+}
+
+/** Types of user activity in the admin journal. */
+export const activityKindLabels: Record<ActivityKind, string> = {
+  LOGIN: 'Вход',
+  LOGOUT: 'Выход',
+  VISIT: 'Просмотр страницы',
+  CREATE: 'Создание',
+  UPDATE: 'Изменение',
+  DELETE: 'Удаление',
+  ACTION: 'Операция'
 }
