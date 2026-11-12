@@ -44,7 +44,6 @@ const dict = reactive<DictionaryMap>({
   PRODUCT_TYPE: [],
   COAL_GRADE: [],
   FRACTION: [],
-  QUARRY: [],
   DEPOSIT: [],
   MINING_SITE: [],
   SUPPLIER: [],
@@ -99,7 +98,6 @@ const form = reactive<
   originType: "OWN_MINING",
   deposit: "",
   miningSite: "",
-  quarry: "",
   shiftPeriod: "",
   supplier: "",
   minedAtLocal: "",
@@ -167,7 +165,6 @@ async function submit() {
       originType: form.originType,
       deposit: form.deposit || undefined,
       miningSite: form.miningSite || undefined,
-      quarry: form.quarry || undefined,
       shiftPeriod: form.shiftPeriod || undefined,
       supplier: form.supplier || undefined,
       minedAt: form.minedAtLocal
@@ -198,7 +195,6 @@ function resetForm() {
     originType: "OWN_MINING",
     deposit: "",
     miningSite: "",
-    quarry: "",
     shiftPeriod: "",
     supplier: "",
     minedAtLocal: "",
@@ -350,15 +346,6 @@ onMounted(() => {
             :options="dict.MINING_SITE"
             :busy="addingField === 'MINING_SITE'"
             @add-new="addWord('MINING_SITE', $event)"
-          />
-        </label>
-        <label>
-          Карьер
-          <AutocompleteInput
-            v-model="form.quarry"
-            :options="dict.QUARRY"
-            :busy="addingField === 'QUARRY'"
-            @add-new="addWord('QUARRY', $event)"
           />
         </label>
         <label>

@@ -35,9 +35,6 @@ const analyses = ref<AnalysisDto[]>([]);
 const error = ref("");
 const saving = ref(false);
 const saved = ref(false);
-const tab = ref<"general" | "origin" | "quantity" | "quality" | "qr">(
-  "general",
-);
 
 const form = reactive({
   batchNumber: "",
@@ -48,7 +45,6 @@ const form = reactive({
   originType: "OWN_MINING" as OriginType,
   deposit: "",
   miningSite: "",
-  quarry: "",
   shiftPeriod: "",
   supplier: "",
   minedAtLocal: "",
@@ -141,7 +137,6 @@ function fillForm(b: BatchDto) {
   form.originType = b.originType;
   form.deposit = b.deposit ?? "";
   form.miningSite = b.miningSite ?? "";
-  form.quarry = b.quarry ?? "";
   form.shiftPeriod = b.shiftPeriod ?? "";
   form.supplier = b.supplier ?? "";
   form.minedAtLocal = toLocalInput(b.minedAt);
@@ -174,7 +169,6 @@ async function save() {
       originType: form.originType,
       deposit: form.deposit || undefined,
       miningSite: form.miningSite || undefined,
-      quarry: form.quarry || undefined,
       shiftPeriod: form.shiftPeriod || undefined,
       supplier: form.supplier || undefined,
       minedAt: form.minedAtLocal
@@ -261,28 +255,9 @@ function resetForm() {
         </template>
       </Modal>
 
-      <div class="tabs">
-        <button :class="{ active: tab === 'general' }" @click="tab = 'general'">
-          Общая информация
-        </button>
-        <button :class="{ active: tab === 'origin' }" @click="tab = 'origin'">
-          Происхождение
-        </button>
-        <button
-          :class="{ active: tab === 'quantity' }"
-          @click="tab = 'quantity'"
-        >
-          Количественные показатели
-        </button>
-        <button :class="{ active: tab === 'quality' }" @click="tab = 'quality'">
-          Показатели качества
-        </button>
-        <button :class="{ active: tab === 'qr' }" @click="tab = 'qr'">
-          QR Code
-        </button>
-      </div>
-
-      <section v-if="tab === 'general'" class="panel">
+      <!-- One long page, no tabs: every block stacked, the user scrolls. -->
+      <section class="panel">
+        <h2>Общая информация</h2>
         <div class="form-grid">
           <label>
             Номер партии
@@ -318,7 +293,8 @@ function resetForm() {
         </p>
       </section>
 
-      <section v-else-if="tab === 'origin'" class="panel">
+      <section class="panel mt-6">
+        <h2>Происхождение</h2>
         <div class="form-grid">
           <label>
             Источник образования партии
@@ -339,10 +315,6 @@ function resetForm() {
           <label>
             Участок добычи
             <input v-model="form.miningSite" />
-          </label>
-          <label>
-            Карьер
-            <input v-model="form.quarry" />
           </label>
           <label>
             Смена / производственный период
@@ -376,7 +348,8 @@ function resetForm() {
         </dl>
       </section>
 
-      <section v-else-if="tab === 'quantity'" class="panel">
+      <section class="panel mt-6">
+        <h2>Количественные показатели</h2>
         <div class="form-grid">
           <label>
             Первоначальный вес, т
@@ -405,9 +378,18 @@ function resetForm() {
         </p>
       </section>
 
-      <div v-else-if="tab === 'quality'">
+      <!-- Repeated here so nobody has to scroll back up to save the forms above. -->
+      <div class="actions mt-4">
+        <span v-if="saved" class="hint">Изменения сохранены</span>
+        <button class="secondary" :disabled="saving" @click="resetForm">
+          Сбросить
+        </button>
+        <button :disabled="saving" @click="save">Сохранить</button>
+      </div>
+
+      <div class="mt-6">
         <section class="panel">
-          <h2>История качества</h2>
+          <h2>Показатели качества · история</h2>
           <div class="overflow-x-auto">
             <table>
               <thead>
@@ -435,7 +417,7 @@ function resetForm() {
           </div>
         </section>
 
-        <section class="panel mt-10">
+        <section class="panel mt-6">
           <h2>Результаты анализов</h2>
           <div class="overflow-x-auto">
             <table>
@@ -477,15 +459,18 @@ function resetForm() {
         </p>
       </div>
 
-      <div v-else class="qr-box">
-        <img
-          :src="qrImageUrl('batch', batch.id)"
-          alt="QR-код партии"
-          width="320"
-          height="320"
-        />
-        <p class="muted">QR-код партии {{ batch.batchNumber }}</p>
-      </div>
+      <section class="panel mt-6">
+        <h2>QR Code</h2>
+        <div class="qr-box">
+          <img
+            :src="qrImageUrl('batch', batch.id)"
+            alt="QR-код партии"
+            width="320"
+            height="320"
+          />
+          <p class="muted">QR-код партии {{ batch.batchNumber }}</p>
+        </div>
+      </section>
     </template>
     <p v-else class="muted">Загрузка…</p>
   </div>

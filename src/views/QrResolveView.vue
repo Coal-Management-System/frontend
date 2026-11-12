@@ -106,9 +106,6 @@ function statusClass(status: string | null | undefined): string {
             <span>Участок добычи</span><b>{{ passport.batch.miningSite || '—' }}</b>
           </div>
           <div class="qr-apk__row">
-            <span>Карьер</span><b>{{ passport.batch.quarry || '—' }}</b>
-          </div>
-          <div class="qr-apk__row">
             <span>Смена / производственный период</span>
             <b>{{ passport.batch.shiftPeriod || '—' }}</b>
           </div>

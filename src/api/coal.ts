@@ -142,7 +142,7 @@ export const dashboardApi = {
 }
 
 // Shared vocabulary for the batch free-text fields (product type, coal grade,
-// fraction, quarry, deposit, mining site, supplier).
+// fraction, deposit, mining site, supplier).
 export const dictionaryApi = {
   list: () => http.get<DictionaryMap>('/dictionary').then(r => r.data),
   add: (field: DictionaryField, value: string) =>

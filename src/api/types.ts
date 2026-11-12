@@ -53,7 +53,6 @@ export interface BatchDto {
   originType: OriginType
   deposit: string | null
   miningSite: string | null
-  quarry: string | null
   shiftPeriod: string | null
   supplier: string | null
   minedAt: string | null
@@ -84,7 +83,6 @@ export interface BatchCreateRequest {
   originType?: OriginType
   deposit?: string
   miningSite?: string
-  quarry?: string
   shiftPeriod?: string
   supplier?: string
   minedAt?: string
@@ -100,7 +98,6 @@ export interface BatchUpdateRequest {
   originType: OriginType
   deposit?: string
   miningSite?: string
-  quarry?: string
   shiftPeriod?: string
   supplier?: string
   minedAt?: string
@@ -323,7 +320,6 @@ export type DictionaryField =
   | 'PRODUCT_TYPE'
   | 'COAL_GRADE'
   | 'FRACTION'
-  | 'QUARRY'
   | 'DEPOSIT'
   | 'MINING_SITE'
   | 'SUPPLIER'
